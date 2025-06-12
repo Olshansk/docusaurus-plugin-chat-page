@@ -45,8 +45,14 @@ export interface ChatPluginContent {
 export interface OpenAIConfig {
     apiKey: string;
 }
+export interface EmbeddingCacheConfig {
+    enabled?: boolean;
+    strategy?: "hash" | "timestamp" | "manual";
+    path?: string;
+}
 export interface PluginOptions {
     label?: string;
     path?: string;
     openai?: OpenAIConfig;
+    embeddingCache?: EmbeddingCacheConfig;
 }

@@ -51,8 +51,15 @@ export interface OpenAIConfig {
   apiKey: string
 }
 
+export interface EmbeddingCacheConfig {
+  enabled?: boolean // Enable or disable embedding cache (default: true)
+  strategy?: "hash" | "timestamp" | "manual" // Cache validation strategy
+  path?: string // Cache file path (default: 'embeddings.json')
+}
+
 export interface PluginOptions {
   label?: string
   path?: string
   openai?: OpenAIConfig
+  embeddingCache?: EmbeddingCacheConfig
 }

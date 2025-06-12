@@ -266,10 +266,16 @@ async function generateEmbeddings(
 /**
  * Load all content and prepare for embedding generation
  */
+import type { EmbeddingCacheConfig } from "./types"
+import * as crypto from "crypto"
+
 export async function loadContent(
-  context: LoadContext & { options?: { openai?: OpenAIConfig } }
+  context: LoadContext & { options?: { openai?: OpenAIConfig, embeddingCache?: EmbeddingCacheConfig } }
 ): Promise<ChatPluginContent> {
   const { siteDir, options } = context
+  const embeddingCache = options?.embeddingCache || { enabled: true, strategy: "hash", path: "embeddings.json" }
+  const cachePath = embeddingCache.path || "embeddings.json"
+  const cacheFullPath = path.join(siteDir, ".docusaurus", cachePath)
 
   if (!options?.openai?.apiKey) {
     throw new Error(
@@ -292,12 +298,56 @@ export async function loadContent(
   const allFiles = [...treeToFlatList(docsTree), ...treeToFlatList(pagesTree)]
   console.log(`\nFound ${allFiles.length} total files to process`)
 
+  // --- Embedding Cache Logic ---
+  let cacheValid = false
+  let cacheData: ChatPluginContent | undefined = undefined
+  if (embeddingCache.enabled) {
+    try {
+      const cacheRaw = await fs.readFile(cacheFullPath, "utf-8")
+      const cacheJson = JSON.parse(cacheRaw)
+      if (embeddingCache.strategy === "manual") {
+        // Always use cache if present, never regenerate
+        cacheValid = true
+        cacheData = cacheJson
+        console.log("\n[Embedding Cache] MANUAL strategy: Using cache and skipping embedding generation.")
+      } else if (embeddingCache.strategy === "hash") {
+        // Compute hash of all file contents
+        const hash = crypto.createHash("sha256")
+        for (const file of allFiles) {
+          hash.update(file.content)
+        }
+        const contentHash = hash.digest("hex")
+        if (cacheJson.metadata?.contentHash === contentHash) {
+          cacheValid = true
+          cacheData = cacheJson
+          console.log("\n[Embedding Cache] Valid cache found. Skipping embedding generation.")
+        }
+      } else if (embeddingCache.strategy === "timestamp") {
+        // Compare timestamps (not implemented, fallback to hash)
+        cacheValid = false
+      }
+    } catch (e) {
+      if (embeddingCache.strategy === "manual") {
+        throw new Error(
+          `[Embedding Cache] MANUAL strategy: Cache file not found at ${cacheFullPath}. Please generate embeddings manually.`
+        )
+      }
+      // Cache file does not exist or is invalid for other strategies
+      cacheValid = false
+    }
+  }
+
+  if (cacheValid && cacheData) {
+    return cacheData
+  }
+  // --- End Embedding Cache Logic ---
+
   // Process each file into chunks with metadata
   console.log("\nSplitting content into chunks...")
   let processedForChunking = 0
   const totalForChunking = allFiles.length
   const MAX_CHUNKS_PER_FILE = 10
-  const allChunks = []
+  const allChunks = [];
 
   // Process files sequentially instead of using flatMap
   for (const file of allFiles) {
@@ -342,16 +392,40 @@ export async function loadContent(
     10
   )
 
+  // Compute content hash for cache
+  let contentHash = ""
+  if (embeddingCache.strategy === "hash") {
+    const hash = crypto.createHash("sha256")
+    for (const file of allFiles) {
+      hash.update(file.content)
+    }
+    contentHash = hash.digest("hex")
+  }
+
+  const result: ChatPluginContent = {
+    chunks: chunksWithEmbeddings,
+    metadata: {
+      totalChunks: chunksWithEmbeddings.length,
+      lastUpdated: new Date().toISOString(),
+      ...(contentHash ? { contentHash } : {}),
+    },
+  }
+
+  // Write cache
+  if (embeddingCache.enabled) {
+    try {
+      await fs.mkdir(path.dirname(cacheFullPath), { recursive: true })
+      await fs.writeFile(cacheFullPath, JSON.stringify(result, null, 2), "utf-8")
+      console.log(`\n[Embedding Cache] Cache updated at ${cacheFullPath}`)
+    } catch (e) {
+      console.warn("[Embedding Cache] Failed to write cache:", e)
+    }
+  }
+
   console.log("\n=== Content processing complete! ===")
   console.log(`Total files processed: ${allFiles.length}`)
   console.log(`Total chunks generated: ${allChunks.length}`)
   console.log(`Total embeddings created: ${chunksWithEmbeddings.length}`)
 
-  return {
-    chunks: chunksWithEmbeddings,
-    metadata: {
-      totalChunks: chunksWithEmbeddings.length,
-      lastUpdated: new Date().toISOString(),
-    },
-  }
+  return result
 }

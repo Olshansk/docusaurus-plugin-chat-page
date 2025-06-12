@@ -2,7 +2,7 @@
 
 ## Local Development
 
-```
+```bash
 # In your plugin repo
 yarn build
 yarn link
