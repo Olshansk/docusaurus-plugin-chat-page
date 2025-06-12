@@ -1,0 +1,327 @@
+.chatContainer {
+  display: flex;
+  gap: 1rem;
+  height: calc(100vh - 300px);
+  min-height: 500px;
+  background: var(--ifm-background-surface-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.chatSideMenu {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--ifm-color-emphasis-200);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--ifm-background-color);
+  border-radius: 8px 0 0 8px;
+}
+
+.newChatButton {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.newChatButton:hover {
+  background: var(--ifm-color-primary-darker);
+}
+
+.chatGroup {
+  margin-bottom: 1rem;
+}
+
+.chatGroupHeader {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-600);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.chatList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow-y: auto;
+  height: calc(100% - 50px); /* Adjust based on new chat button height */
+}
+
+.chatListItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+  margin: 0 0.5rem;
+}
+
+.chatListItem:hover {
+  background-color: var(--ifm-color-emphasis-200);
+}
+
+.chatListItem.active {
+  background-color: var(--ifm-color-emphasis-300);
+}
+
+.chatTitle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 0.5rem;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  color: var(--ifm-color-emphasis-500);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  font-size: 1.2rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  opacity: 0.5;
+}
+
+.chatListItem:hover .deleteButton,
+.chatListItem.active .deleteButton,
+.deleteButton:hover {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background: var(--ifm-color-emphasis-300);
+  color: var(--ifm-color-emphasis-700);
+}
+
+.chatMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--ifm-background-color);
+  border-radius: 0 8px 8px 0;
+}
+
+.chatHistory {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  scroll-behavior: smooth;
+}
+
+.message {
+  margin-bottom: 1rem;
+  max-width: 80%;
+  clear: both;
+}
+
+.userMessage {
+  float: right;
+}
+
+.assistantMessage {
+  float: left;
+}
+
+.messageContent {
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Markdown styles */
+.messageContent :global(p) {
+  margin: 0 0 1rem 0;
+}
+
+.messageContent :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+.messageContent :global(strong) {
+  font-weight: 600;
+}
+
+.messageContent :global(em) {
+  font-style: italic;
+}
+
+.messageContent :global(code) {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: var(--ifm-font-family-monospace);
+}
+
+.messageContent :global(pre) {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.messageContent :global(pre code) {
+  background: none;
+  padding: 0;
+  font-size: 0.9em;
+}
+
+.messageContent :global(ul),
+.messageContent :global(ol) {
+  margin: 0 0 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.messageContent :global(li) {
+  margin: 0.25rem 0;
+}
+
+.messageContent :global(a) {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.messageContent :global(blockquote) {
+  margin: 1rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid rgba(0, 0, 0, 0.2);
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.assistantMessage .messageContent :global(blockquote) {
+  border-left-color: var(--ifm-color-emphasis-300);
+  color: var(--ifm-color-emphasis-700);
+}
+
+.userMessage .messageContent :global(code),
+.userMessage .messageContent :global(pre) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.userMessage .messageContent :global(blockquote) {
+  border-left-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.userMessage .messageContent {
+  background: var(--ifm-color-primary);
+  color: white;
+  border-bottom-right-radius: 0.25rem;
+}
+
+.assistantMessage .messageContent {
+  background: var(--ifm-color-emphasis-200);
+  border-bottom-left-radius: 0.25rem;
+}
+
+.messageTimestamp {
+  font-size: 0.75rem;
+  color: var(--ifm-color-emphasis-600);
+  margin-top: 0.25rem;
+  text-align: right;
+}
+
+.assistantMessage .messageTimestamp {
+  text-align: left;
+}
+
+.chatInputContainer {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  background: var(--ifm-background-color);
+  border-radius: 0 0 8px 0;
+}
+
+.chatInput {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  font-size: 1rem;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+}
+
+.chatInput:focus {
+  outline: none;
+  border-color: var(--ifm-color-primary);
+}
+
+.sendButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.sendButton:hover {
+  background: var(--ifm-color-primary-darker);
+}
+
+.sendButton:disabled {
+  background: var(--ifm-color-emphasis-300);
+  cursor: not-allowed;
+}
+
+.loadingIndicator {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 1rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.loadingIndicator span {
+  animation: bounce 1s infinite;
+}
+
+.loadingIndicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loadingIndicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.errorMessage {
+  color: var(--ifm-color-danger);
+  text-align: center;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: var(--ifm-color-danger-contrast-background);
+  border-radius: 4px;
+}
