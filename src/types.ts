@@ -64,10 +64,21 @@ export interface PromptConfig {
   maxTokens?: number
 }
 
+export interface EmbeddingConfig {
+  model?: string
+  chunkSize?: number
+  chunkOverlap?: number
+  batchSize?: number
+  maxChunksPerFile?: number
+  chunkingStrategy?: "headers" | "paragraphs"
+  relevantChunks?: number
+}
+
 export interface PluginOptions {
   label?: string
   path?: string
   openai?: OpenAIConfig
   embeddingCache?: EmbeddingCacheConfig
   prompt?: PromptConfig
+  embedding?: EmbeddingConfig
 }

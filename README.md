@@ -110,6 +110,32 @@ Customize the AI assistant's behavior and model:
 }
 ```
 
+### Embedding Configuration
+
+Customize how content is processed and embedded:
+
+```js
+{
+  embedding: {
+    model: "text-embedding-3-small", // OpenAI embedding model
+    chunkSize: 1500, // Maximum characters per chunk
+    chunkingStrategy: "headers", // "headers" or "paragraphs"
+    batchSize: 10, // Embeddings per API batch
+    maxChunksPerFile: 10, // Maximum chunks per file
+    relevantChunks: 3 // Number of chunks to include in responses
+  }
+}
+```
+
+**Chunking Strategies:**
+- `"headers"` - Split content at markdown headers with size fallback (recommended)
+- `"paragraphs"` - Split content at paragraph boundaries
+
+**Available Models:**
+- `"text-embedding-3-small"` - Fast and cost-effective (default)
+- `"text-embedding-3-large"` - Higher accuracy, more expensive
+- `"text-embedding-ada-002"` - Legacy model
+
 **Complete example with all options:**
 ```js
 module.exports = {
@@ -124,6 +150,14 @@ module.exports = {
         embeddingCache: {
           enabled: true,
           strategy: "hash"
+        },
+        embedding: {
+          model: "text-embedding-3-small",
+          chunkSize: 2000,
+          chunkingStrategy: "headers",
+          batchSize: 5,
+          maxChunksPerFile: 15,
+          relevantChunks: 5
         },
         prompt: {
           systemPrompt: "You are a technical support assistant. Provide step-by-step solutions and always ask for clarification when needed.",

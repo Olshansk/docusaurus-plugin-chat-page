@@ -2,7 +2,7 @@
 
 import * as path from "path";
 
-import type { ChatPluginContent, OpenAIConfig, PromptConfig } from "./types";
+import type { ChatPluginContent, OpenAIConfig, PromptConfig, EmbeddingConfig } from "./types";
 import { LoadContext, Plugin } from "@docusaurus/types";
 
 import type { EmbeddingCacheConfig } from "./types";
@@ -15,6 +15,7 @@ export interface PluginOptions {
   openai?: OpenAIConfig;
   embeddingCache?: EmbeddingCacheConfig;
   prompt?: PromptConfig;
+  embedding?: EmbeddingConfig;
 }
 
 export default function pluginChatPage(
@@ -32,6 +33,7 @@ export default function pluginChatPage(
     openai,
     embeddingCache,
     prompt,
+    embedding,
   } = options;
 
   // Normalize the path
@@ -65,7 +67,7 @@ export default function pluginChatPage(
           "OpenAI API key is required. Please add it to your docusaurus.config.js"
         );
       }
-      return loadContent({ ...context, options: { openai, embeddingCache } });
+      return loadContent({ ...context, options: { openai, embeddingCache, embedding } });
     },
 
     async contentLoaded({ content, actions }) {
@@ -77,6 +79,7 @@ export default function pluginChatPage(
         config: {
           openai,
           prompt,
+          embedding,
         },
       });
 
@@ -87,6 +90,7 @@ export default function pluginChatPage(
           config: {
             openai,
             prompt,
+            embedding,
           },
         })
       );

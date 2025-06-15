@@ -1,7 +1,7 @@
 import { LoadContext } from "@docusaurus/types"
 import * as fs from "fs/promises"
 import * as path from "path"
-import type { FileNode, ChatPluginContent, OpenAIConfig } from "./types"
+import type { FileNode, ChatPluginContent, OpenAIConfig, EmbeddingConfig, EmbeddingCacheConfig } from "./types"
 import { glob } from "glob"
 import matter from "gray-matter"
 import { remark } from "remark"
@@ -61,18 +61,81 @@ function pathsToTree(files: string[], baseDir: string): FileNode[] {
 }
 
 /**
- * Split text into chunks intelligently, trying to break at paragraph boundaries
+ * Split text into chunks by headers with max size fallback
  */
-function splitIntoChunks(text: string, maxChunkSize: number = 1500): string[] {
-  // Split into paragraphs first
+function splitByHeaders(text: string, maxChunkSize: number = 1500): Array<{text: string, section?: string}> {
+  const lines = text.split('\n')
+  const chunks: Array<{text: string, section?: string}> = []
+  let currentChunk = ""
+  let currentSection = ""
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const isHeader = /^#{1,6}\s/.test(line)
+
+    if (isHeader) {
+      // Save current chunk before starting new section
+      if (currentChunk.trim()) {
+        chunks.push({
+          text: currentChunk.trim(),
+          section: currentSection || undefined
+        })
+      }
+      
+      // Start new section
+      currentSection = line.replace(/^#+\s/, '')
+      currentChunk = line
+    } else {
+      // Add line to current chunk
+      currentChunk += (currentChunk ? '\n' : '') + line
+      
+      // If chunk exceeds max size, save it and start new chunk in same section
+      if (currentChunk.length > maxChunkSize) {
+        chunks.push({
+          text: currentChunk.trim(),
+          section: currentSection || undefined
+        })
+        currentChunk = ""
+      }
+    }
+  }
+
+  // Add final chunk
+  if (currentChunk.trim()) {
+    chunks.push({
+      text: currentChunk.trim(),
+      section: currentSection || undefined
+    })
+  }
+
+  return chunks
+}
+
+/**
+ * Split text into chunks intelligently based on strategy
+ */
+function splitIntoChunks(
+  text: string, 
+  options: {
+    maxChunkSize?: number
+    strategy?: "headers" | "paragraphs"
+  } = {}
+): Array<{text: string, section?: string}> {
+  const { maxChunkSize = 1500, strategy = "headers" } = options
+
+  if (strategy === "headers") {
+    return splitByHeaders(text, maxChunkSize)
+  }
+
+  // Fallback to paragraph-based chunking
   const paragraphs = text.split(/\n\s*\n/)
-  const chunks: string[] = []
+  const chunks: Array<{text: string, section?: string}> = []
   let currentChunk = ""
 
   for (const paragraph of paragraphs) {
     // If adding this paragraph would exceed max size, save current chunk and start new one
     if (currentChunk && currentChunk.length + paragraph.length > maxChunkSize) {
-      chunks.push(currentChunk.trim())
+      chunks.push({text: currentChunk.trim()})
       currentChunk = ""
     }
 
@@ -81,7 +144,7 @@ function splitIntoChunks(text: string, maxChunkSize: number = 1500): string[] {
       const sentences = paragraph.match(/[^.!?]+[.!?]+/g) || [paragraph]
       for (const sentence of sentences) {
         if (currentChunk.length + sentence.length > maxChunkSize) {
-          if (currentChunk) chunks.push(currentChunk.trim())
+          if (currentChunk) chunks.push({text: currentChunk.trim()})
           currentChunk = sentence
         } else {
           currentChunk = currentChunk ? `${currentChunk} ${sentence}` : sentence
@@ -97,7 +160,7 @@ function splitIntoChunks(text: string, maxChunkSize: number = 1500): string[] {
 
   // Add the last chunk if there is one
   if (currentChunk) {
-    chunks.push(currentChunk.trim())
+    chunks.push({text: currentChunk.trim()})
   }
 
   return chunks
@@ -212,8 +275,10 @@ function treeToFlatList(
 async function generateEmbeddings(
   chunks: Array<{ text: string; metadata: Record<string, any> }>,
   openAIConfig: OpenAIConfig,
-  batchSize: number = 10
+  embeddingConfig: EmbeddingConfig = {}
 ) {
+  const batchSize = embeddingConfig.batchSize || 10
+  const model = embeddingConfig.model || "text-embedding-3-small"
   const aiService = createAIService(openAIConfig)
   const results = []
   const totalChunks = chunks.length
@@ -228,7 +293,7 @@ async function generateEmbeddings(
     const texts = batch.map((chunk) => chunk.text)
 
     try {
-      const embeddings = await aiService.generateEmbeddings(texts)
+      const embeddings = await aiService.generateEmbeddings(texts, { model })
 
       for (let j = 0; j < batch.length; j++) {
         results.push({
@@ -266,14 +331,14 @@ async function generateEmbeddings(
 /**
  * Load all content and prepare for embedding generation
  */
-import type { EmbeddingCacheConfig } from "./types"
 import * as crypto from "crypto"
 
 export async function loadContent(
-  context: LoadContext & { options?: { openai?: OpenAIConfig, embeddingCache?: EmbeddingCacheConfig } }
+  context: LoadContext & { options?: { openai?: OpenAIConfig, embeddingCache?: EmbeddingCacheConfig, embedding?: EmbeddingConfig } }
 ): Promise<ChatPluginContent> {
   const { siteDir, options } = context
   const embeddingCache = options?.embeddingCache || { enabled: true, strategy: "hash", path: "embeddings.json" }
+  const embeddingConfig = options?.embedding || {}
   const cachePath = embeddingCache.path || "embeddings.json"
   const cacheFullPath = path.join(siteDir, ".docusaurus", cachePath)
 
@@ -346,12 +411,15 @@ export async function loadContent(
   console.log("\nSplitting content into chunks...")
   let processedForChunking = 0
   const totalForChunking = allFiles.length
-  const MAX_CHUNKS_PER_FILE = 10
+  const MAX_CHUNKS_PER_FILE = embeddingConfig.maxChunksPerFile || 10
   const allChunks = [];
 
   // Process files sequentially instead of using flatMap
   for (const file of allFiles) {
-    const textChunks = splitIntoChunks(file.content)
+    const textChunks = splitIntoChunks(file.content, {
+      maxChunkSize: embeddingConfig.chunkSize || 1500,
+      strategy: embeddingConfig.chunkingStrategy || "headers"
+    })
     const limitedChunks =
       textChunks.length > MAX_CHUNKS_PER_FILE
         ? textChunks.slice(0, MAX_CHUNKS_PER_FILE)
@@ -359,11 +427,14 @@ export async function loadContent(
 
     // Add chunks for this file with metadata
     for (let index = 0; index < limitedChunks.length; index++) {
+      const chunk = limitedChunks[index]
       allChunks.push({
-        text: limitedChunks[index],
+        text: typeof chunk === 'string' ? chunk : chunk.text,
         metadata: {
           ...file.metadata,
           filePath: file.filePath,
+          title: file.metadata.title,
+          section: typeof chunk === 'object' ? chunk.section : undefined,
           position: index,
         },
       })
@@ -389,7 +460,7 @@ export async function loadContent(
   const chunksWithEmbeddings = await generateEmbeddings(
     allChunks,
     options.openai!,
-    10
+    embeddingConfig
   )
 
   // Compute content hash for cache

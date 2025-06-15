@@ -5,8 +5,11 @@ export interface ChatCompletionOptions {
     temperature?: number;
     maxTokens?: number;
 }
+export interface EmbeddingOptions {
+    model?: string;
+}
 export interface AIService {
-    generateEmbeddings(texts: string[]): Promise<number[][]>;
+    generateEmbeddings(texts: string[], options?: EmbeddingOptions): Promise<number[][]>;
     generateChatCompletion(messages: ChatCompletionMessageParam[], options?: ChatCompletionOptions): AsyncGenerator<string, void, unknown>;
 }
 export declare function createAIService(config: OpenAIConfig): AIService;

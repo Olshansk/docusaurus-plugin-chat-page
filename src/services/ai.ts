@@ -8,8 +8,12 @@ export interface ChatCompletionOptions {
   maxTokens?: number
 }
 
+export interface EmbeddingOptions {
+  model?: string
+}
+
 export interface AIService {
-  generateEmbeddings(texts: string[]): Promise<number[][]>
+  generateEmbeddings(texts: string[], options?: EmbeddingOptions): Promise<number[][]>
   generateChatCompletion(
     messages: ChatCompletionMessageParam[],
     options?: ChatCompletionOptions
@@ -23,10 +27,13 @@ export function createAIService(config: OpenAIConfig): AIService {
   })
 
   return {
-    async generateEmbeddings(texts: string[]): Promise<number[][]> {
+    async generateEmbeddings(
+      texts: string[], 
+      options: EmbeddingOptions = {}
+    ): Promise<number[][]> {
       const response = await client.embeddings.create({
         input: texts,
-        model: "text-embedding-3-small",
+        model: options.model || "text-embedding-3-small",
       })
       return response.data.map((item) => item.embedding)
     },
