@@ -337,6 +337,9 @@ export async function loadContent(
   context: LoadContext & { options?: { openai?: OpenAIConfig, embeddingCache?: EmbeddingCacheConfig, embedding?: EmbeddingConfig } }
 ): Promise<ChatPluginContent> {
   const { siteDir, options } = context
+  
+  console.log("\n🔥 USING UPDATED PLUGIN VERSION WITH CACHE FIX 🔥")
+  
   const embeddingCache = options?.embeddingCache || { enabled: true, strategy: "hash", path: "embeddings.json" }
   const embeddingConfig = options?.embedding || {}
   const cachePath = embeddingCache.path || "embeddings.json"
@@ -349,6 +352,9 @@ export async function loadContent(
   }
 
   console.log("\n=== Starting content processing ===")
+  console.log(`[DEBUG] Cache strategy: ${embeddingCache.strategy}`)
+  console.log(`[DEBUG] Cache path: ${cacheFullPath}`)
+  console.log(`[DEBUG] Cache enabled: ${embeddingCache.enabled}`)
 
   const docsDir = path.join(siteDir, "docs")
   const pagesDir = path.join(siteDir, "src/pages")
@@ -366,15 +372,25 @@ export async function loadContent(
   // --- Embedding Cache Logic ---
   let cacheValid = false
   let cacheData: ChatPluginContent | undefined = undefined
+  console.log(`\n[DEBUG] Checking cache at: ${cacheFullPath}`)
   if (embeddingCache.enabled) {
     try {
+      console.log(`[DEBUG] Reading cache file...`)
       const cacheRaw = await fs.readFile(cacheFullPath, "utf-8")
       const cacheJson = JSON.parse(cacheRaw)
+      console.log(`[DEBUG] Cache file read successfully. Strategy: ${embeddingCache.strategy}`)
+      console.log(`[DEBUG] Cache contains ${cacheJson.chunks?.length || 0} chunks`)
+      
       if (embeddingCache.strategy === "manual") {
         // Always use cache if present, never regenerate
-        cacheValid = true
-        cacheData = cacheJson
-        console.log("\n[Embedding Cache] MANUAL strategy: Using cache and skipping embedding generation.")
+        if (cacheJson.chunks && Array.isArray(cacheJson.chunks) && cacheJson.metadata) {
+          cacheValid = true
+          cacheData = cacheJson
+          console.log(`\n[Embedding Cache] MANUAL strategy: Using cache with ${cacheJson.chunks.length} chunks, skipping embedding generation.`)
+        } else {
+          console.warn("\n[Embedding Cache] MANUAL strategy: Cache file exists but has invalid format.")
+          console.warn(`[DEBUG] Cache validation failed: chunks=${!!cacheJson.chunks}, isArray=${Array.isArray(cacheJson.chunks)}, metadata=${!!cacheJson.metadata}`)
+        }
       } else if (embeddingCache.strategy === "hash") {
         // Compute hash of all file contents
         const hash = crypto.createHash("sha256")
@@ -392,6 +408,7 @@ export async function loadContent(
         cacheValid = false
       }
     } catch (e) {
+      console.log(`[DEBUG] Cache read failed: ${e.message}`)
       if (embeddingCache.strategy === "manual") {
         throw new Error(
           `[Embedding Cache] MANUAL strategy: Cache file not found at ${cacheFullPath}. Please generate embeddings manually.`
@@ -403,8 +420,10 @@ export async function loadContent(
   }
 
   if (cacheValid && cacheData) {
+    console.log(`[DEBUG] Cache is valid, returning cached data with ${cacheData.chunks.length} chunks`)
     return cacheData
   }
+  console.log(`[DEBUG] Cache not valid (cacheValid=${cacheValid}, hasData=${!!cacheData}), proceeding with embedding generation`)
   // --- End Embedding Cache Logic ---
 
   // Process each file into chunks with metadata
@@ -465,12 +484,15 @@ export async function loadContent(
 
   // Compute content hash for cache
   let contentHash = ""
-  if (embeddingCache.strategy === "hash") {
+  if (embeddingCache.strategy === "hash" || embeddingCache.strategy === "manual") {
     const hash = crypto.createHash("sha256")
     for (const file of allFiles) {
       hash.update(file.content)
     }
     contentHash = hash.digest("hex")
+    if (embeddingCache.strategy === "manual") {
+      console.log(`\n[Embedding Cache] MANUAL strategy: Generated contentHash ${contentHash} for future reference.`)
+    }
   }
 
   const result: ChatPluginContent = {

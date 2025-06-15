@@ -40,6 +40,7 @@ export interface ChatPluginContent {
     metadata: {
         totalChunks: number;
         lastUpdated: string;
+        contentHash?: string;
     };
 }
 export interface OpenAIConfig {

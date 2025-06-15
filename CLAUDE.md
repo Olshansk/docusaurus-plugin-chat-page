@@ -41,6 +41,7 @@ yarn link docusaurus-plugin-chat-page
 ## Architecture Overview
 
 ### Plugin Structure
+
 - **src/index.ts**: Main plugin entry point implementing Docusaurus plugin lifecycle
 - **src/content.ts**: Content processing, markdown parsing, and embedding generation
 - **src/services/ai.ts**: OpenAI API integration for embeddings and chat completions
@@ -48,12 +49,14 @@ yarn link docusaurus-plugin-chat-page
 - **src/theme/ChatPage/**: React component for the chat interface
 
 ### Build Process
+
 1. **Content Loading**: Scans documentation files, processes markdown with frontmatter
 2. **Chunk Generation**: Splits content into manageable chunks for embedding
 3. **Embedding Generation**: Uses OpenAI's text-embedding-3-small model
 4. **Static Generation**: Creates embeddings.json for client-side similarity search
 
 ### Runtime Architecture
+
 - **Client-side vector search**: Finds relevant documentation chunks using cosine similarity
 - **Streaming chat**: Uses OpenAI's gpt-4o-mini for contextual responses
 - **Theme integration**: Provides React component that integrates with Docusaurus theme system
@@ -73,7 +76,7 @@ plugins: [
       },
     },
   ],
-]
+];
 ```
 
 ## Important Notes

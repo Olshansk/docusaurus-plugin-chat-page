@@ -6,6 +6,10 @@ A Docusaurus plugin that adds an AI-powered chat interface to your documentation
 - [How It Works](#how-it-works)
 - [Installation](#installation)
 - [Configuration](#configuration)
+  - [Configuration Options](#configuration-options)
+  - [Embedding Cache](#embedding-cache)
+  - [Custom Prompts](#custom-prompts)
+  - [Embedding Configuration](#embedding-configuration)
   - [Adding to Navigation](#adding-to-navigation)
 - [Environment Variables](#environment-variables)
 - [Usage](#usage)
@@ -91,6 +95,7 @@ Control how embeddings are cached to speed up builds:
 ```
 
 **Cache Strategies:**
+
 - `"hash"` - Invalidate cache when content changes (recommended)
 - `"timestamp"` - Invalidate cache based on file modification time
 - `"manual"` - Never invalidate cache automatically
@@ -128,15 +133,18 @@ Customize how content is processed and embedded:
 ```
 
 **Chunking Strategies:**
+
 - `"headers"` - Split content at markdown headers with size fallback (recommended)
 - `"paragraphs"` - Split content at paragraph boundaries
 
 **Available Models:**
+
 - `"text-embedding-3-small"` - Fast and cost-effective (default)
 - `"text-embedding-3-large"` - Higher accuracy, more expensive
 - `"text-embedding-ada-002"` - Legacy model
 
 **Complete example with all options:**
+
 ```js
 module.exports = {
   plugins: [
@@ -149,7 +157,7 @@ module.exports = {
         },
         embeddingCache: {
           enabled: true,
-          strategy: "hash"
+          strategy: "hash",
         },
         embedding: {
           model: "text-embedding-3-small",
@@ -157,14 +165,15 @@ module.exports = {
           chunkingStrategy: "headers",
           batchSize: 5,
           maxChunksPerFile: 15,
-          relevantChunks: 5
+          relevantChunks: 5,
         },
         prompt: {
-          systemPrompt: "You are a technical support assistant. Provide step-by-step solutions and always ask for clarification when needed.",
+          systemPrompt:
+            "You are a technical support assistant. Provide step-by-step solutions and always ask for clarification when needed.",
           model: "gpt-4o-mini",
           temperature: 0.3,
-          maxTokens: 800
-        }
+          maxTokens: 800,
+        },
       },
     ],
   ],

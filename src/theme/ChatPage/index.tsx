@@ -12,8 +12,7 @@ import useIsBrowser from "@docusaurus/useIsBrowser";
 import { usePluginData } from "@docusaurus/useGlobalData";
 
 // Default system prompt template for the documentation assistant
-const createDefaultSystemPrompt =
-  () => `You are a documentation assistant with a strictly limited scope.
+const defaultSystemPrompt = `You are a documentation assistant with a strictly limited scope.
 You can ONLY answer questions about the provided documentation context.
 You must follow these rules:
 
@@ -361,7 +360,9 @@ export default function ChatPage(): JSX.Element {
       // Build the system prompt for the documentation assistant.
       const basePrompt = config.prompt?.systemPrompt
         ? config.prompt.systemPrompt
-        : createDefaultSystemPrompt();
+        : defaultSystemPrompt;
+
+        ] Base prompt:", basePrompt);
       const systemPrompt = `${basePrompt}\n\nDocumentation context:\n${contextText}`;
 
       const messages: ChatCompletionMessageParam[] = [
