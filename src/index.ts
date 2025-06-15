@@ -12,6 +12,7 @@ import { normalizeUrl } from "@docusaurus/utils";
 export interface PluginOptions {
   label?: string;
   path?: string;
+  baseURL?: string;
   openai?: OpenAIConfig;
   embeddingCache?: EmbeddingCacheConfig;
   prompt?: PromptConfig;
@@ -30,6 +31,7 @@ export default function pluginChatPage(
   const {
     label = "Chat",
     path: inputPath = "chat",
+    baseURL,
     openai,
     embeddingCache,
     prompt,
@@ -67,7 +69,7 @@ export default function pluginChatPage(
           "OpenAI API key is required. Please add it to your docusaurus.config.js"
         );
       }
-      return loadContent({ ...context, options: { openai, embeddingCache, embedding } });
+      return loadContent({ ...context, options: { openai, embeddingCache, embedding, baseURL } });
     },
 
     async contentLoaded({ content, actions }) {
@@ -80,6 +82,7 @@ export default function pluginChatPage(
           openai,
           prompt,
           embedding,
+          baseURL,
         },
       });
 
@@ -91,6 +94,7 @@ export default function pluginChatPage(
             openai,
             prompt,
             embedding,
+            baseURL,
           },
         })
       );

@@ -78,6 +78,7 @@ export interface EmbeddingConfig {
 export interface PluginOptions {
   label?: string
   path?: string
+  baseURL?: string
   openai?: OpenAIConfig
   embeddingCache?: EmbeddingCacheConfig
   prompt?: PromptConfig

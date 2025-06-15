@@ -4,6 +4,7 @@ import type { EmbeddingCacheConfig } from "./types";
 export interface PluginOptions {
     label?: string;
     path?: string;
+    baseURL?: string;
     openai?: OpenAIConfig;
     embeddingCache?: EmbeddingCacheConfig;
     prompt?: PromptConfig;

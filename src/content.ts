@@ -11,6 +11,58 @@ import process from "process"
 import { createAIService } from "./services/ai"
 
 /**
+ * Convert file path to documentation URL
+ */
+function filePathToURL(filePath: string, baseURL?: string): string {
+  if (!baseURL) {
+    return filePath
+  }
+  
+  console.log(`[DEBUG] Converting file path: ${filePath} with baseURL: ${baseURL}`)
+  
+  // Remove .md extension and convert to URL path
+  let urlPath = filePath.replace(/\.mdx?$/, '')
+  
+  // Remove leading docs/ or src/pages/ prefixes
+  urlPath = urlPath.replace(/^(docs\/|src\/pages\/)/, '')
+  
+  // Split path into segments to handle directories and filename separately
+  const pathSegments = urlPath.split('/')
+  
+  // Process each segment
+  const processedSegments = pathSegments.map(segment => {
+    // Remove numeric prefixes from directory names (e.g., "1_operate" -> "operate")
+    let processed = segment.replace(/^\d+_/, '')
+    
+    // Only convert underscores to hyphens in directory names, not filenames
+    // Check if this is the last segment (filename) by checking if it's the last in the array
+    const isFilename = pathSegments.indexOf(segment) === pathSegments.length - 1
+    
+    if (!isFilename) {
+      // Directory: convert underscores to hyphens
+      processed = processed.replace(/_/g, '-')
+    }
+    // Filename: keep underscores as-is
+    
+    return processed
+  })
+  
+  urlPath = processedSegments.join('/')
+  
+  // Clean up any empty segments
+  urlPath = urlPath.replace(/\/+/g, '/').replace(/^\//, '')
+  
+  // Ensure baseURL ends with / and urlPath doesn't start with /
+  const cleanBaseURL = baseURL.replace(/\/$/, '')
+  const cleanUrlPath = urlPath.replace(/^\//, '')
+  
+  const result = `${cleanBaseURL}/${cleanUrlPath}`
+  console.log(`[DEBUG] Converted URL: ${result}`)
+  
+  return result
+}
+
+/**
  * Convert a flat list of file paths into a tree structure
  */
 function pathsToTree(files: string[], baseDir: string): FileNode[] {
@@ -334,7 +386,7 @@ async function generateEmbeddings(
 import * as crypto from "crypto"
 
 export async function loadContent(
-  context: LoadContext & { options?: { openai?: OpenAIConfig, embeddingCache?: EmbeddingCacheConfig, embedding?: EmbeddingConfig } }
+  context: LoadContext & { options?: { openai?: OpenAIConfig, embeddingCache?: EmbeddingCacheConfig, embedding?: EmbeddingConfig, baseURL?: string } }
 ): Promise<ChatPluginContent> {
   const { siteDir, options } = context
   
@@ -342,6 +394,7 @@ export async function loadContent(
   
   const embeddingCache = options?.embeddingCache || { enabled: true, strategy: "hash", path: "embeddings.json" }
   const embeddingConfig = options?.embedding || {}
+  const baseURL = options?.baseURL
   const cachePath = embeddingCache.path || "embeddings.json"
   const cacheFullPath = path.join(siteDir, ".docusaurus", cachePath)
 
@@ -452,6 +505,7 @@ export async function loadContent(
         metadata: {
           ...file.metadata,
           filePath: file.filePath,
+          fileURL: filePathToURL(file.filePath, baseURL),
           title: file.metadata.title,
           section: typeof chunk === 'object' ? chunk.section : undefined,
           position: index,

@@ -9,5 +9,6 @@ export declare function loadContent(context: LoadContext & {
         openai?: OpenAIConfig;
         embeddingCache?: EmbeddingCacheConfig;
         embedding?: EmbeddingConfig;
+        baseURL?: string;
     };
 }): Promise<ChatPluginContent>;

@@ -78,6 +78,7 @@ module.exports = {
 
 - `path` (optional): The URL path for the chat page. Defaults to `"chat"`.
 - `label` (optional): The label for the chat page. Defaults to `"Chat"`.
+- `baseURL` (optional): Base URL for generating clickable documentation links in responses (e.g., `"https://docs.example.com"`).
 - `openai.apiKey` (required): Your OpenAI API key for generating embeddings and chat responses.
 
 ### Embedding Cache
@@ -96,9 +97,27 @@ Control how embeddings are cached to speed up builds:
 
 **Cache Strategies:**
 
-- `"hash"` - Invalidate cache when content changes (recommended)
+- `"hash"` - Invalidate cache when content changes (recommended for development)
 - `"timestamp"` - Invalidate cache based on file modification time
-- `"manual"` - Never invalidate cache automatically
+- `"manual"` - Never invalidate cache automatically (recommended for CI/CD)
+
+**CI/CD Performance:**
+
+For faster CI builds, commit the embeddings cache to git:
+
+```gitignore
+# In .gitignore - keep embeddings for CI efficiency
+.docusaurus/*
+!.docusaurus/embeddings.json
+```
+
+**Regenerating Embeddings:**
+
+To regenerate embeddings with manual strategy:
+1. Temporarily change `strategy: "manual"` to `strategy: "hash"`
+2. Run build (embeddings will regenerate)
+3. Change back to `strategy: "manual"`
+4. Commit updated `embeddings.json`
 
 ### Custom Prompts
 
@@ -152,6 +171,7 @@ module.exports = {
       "docusaurus-plugin-chat-page",
       {
         path: "chat",
+        baseURL: "https://docs.example.com", // Generate clickable links
         openai: {
           apiKey: process.env.OPENAI_API_KEY,
         },
@@ -178,6 +198,32 @@ module.exports = {
     ],
   ],
 };
+```
+
+### Documentation Links
+
+Configure `baseURL` to generate clickable links in chat responses:
+
+```js
+{
+  baseURL: "https://docs.example.com"
+}
+```
+
+**URL Transformation:**
+- `docs/setup/installation.md` → `https://docs.example.com/setup/installation`
+- `1_operate/3_configs/supplier_config.md` → `https://docs.example.com/operate/configs/supplier-config`
+
+**Features:**
+- Removes `.md`/`.mdx` extensions
+- Strips numeric prefixes (e.g., `1_operate` → `operate`)
+- Converts underscores to hyphens
+- Removes `docs/` and `src/pages/` prefixes
+
+**Example Response:**
+```
+Instead of: Source: 1_operate/3_configs/supplier_config.md
+You get:    Source: https://docs.example.com/operate/configs/supplier-config
 ```
 
 ### Adding to Navigation

@@ -209,6 +209,7 @@ export default function ChatPage(): JSX.Element {
         chunkingStrategy?: "headers" | "paragraphs";
         relevantChunks?: number;
       };
+      baseURL?: string;
     };
   };
 
@@ -354,7 +355,10 @@ export default function ChatPage(): JSX.Element {
         config.embedding?.relevantChunks || 3
       );
       const contextText = relevantChunks
-        .map((chunk) => `${chunk.text}\nSource: ${chunk.metadata.filePath}`)
+        .map((chunk) => {
+          console.log(`[DEBUG] Chunk metadata:`, chunk.metadata);
+          return `${chunk.text}\nSource: ${chunk.metadata.fileURL || chunk.metadata.filePath}`;
+        })
         .join("\n\n");
 
       // Build the system prompt for the documentation assistant.
@@ -362,7 +366,7 @@ export default function ChatPage(): JSX.Element {
         ? config.prompt.systemPrompt
         : defaultSystemPrompt;
 
-        ] Base prompt:", basePrompt);
+      console.log("[OLSHANSKY DEBUG] Base prompt:", basePrompt);
       const systemPrompt = `${basePrompt}\n\nDocumentation context:\n${contextText}`;
 
       const messages: ChatCompletionMessageParam[] = [
