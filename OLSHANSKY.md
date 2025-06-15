@@ -24,8 +24,19 @@ git commit -m "Build plugin for GitHub install"
 
 ## Things I want to do
 
-- [ ] Add support for OpenRouter instead of OpenAI
-- [ ] Customize how I generate embeddings
-- [ ] Customize the prompt
-- [ ] Add code snippets in the prompt
-- [ ] Add links in the responses
+- [ ] Support for things other than needing an OpenAI key
+  - [ ] OpenRouter API Keys
+  - [ ] Claude
+  - [ ] Local models
+  - [ ] Local embeddings
+  - [ ] Models in WebAssembly
+  - [ ] Pocket RelayMiner
+- [ ] Embeddings
+  - [ ] Customize Embedding Generation (models, size, type, chunking)
+  - [ ] Customize Embedding Similarity Search (models, size, type, chunking)
+- [ ] Prompt
+  - [ ] Customize the prompt
+  - [ ] Add code snippets in the prompt
+  - [ ] Add links in the responses
+- [ ] Claude specific
+  - [ ] Use Claude's links / references

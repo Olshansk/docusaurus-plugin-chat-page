@@ -1,33 +1,34 @@
-import React, { useState, useRef, useEffect } from "react"
-import Layout from "@theme/Layout"
-import { usePluginData } from "@docusaurus/useGlobalData"
-import useIsBrowser from "@docusaurus/useIsBrowser"
-import type { DocumentChunk, DocumentChunkWithEmbedding } from "../../types"
-import styles from "./styles.module.css"
-import { cosineSimilarity } from "../../utils/vector"
-import ReactMarkdown from "react-markdown"
-import { createAIService } from "../../services/ai"
-import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
+import type { DocumentChunk, DocumentChunkWithEmbedding } from "../../types";
+import React, { useEffect, useRef, useState } from "react";
+
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import Layout from "@theme/Layout";
+import ReactMarkdown from "react-markdown";
+import { cosineSimilarity } from "../../utils/vector";
+import { createAIService } from "../../services/ai";
+import styles from "./styles.module.css";
+import useIsBrowser from "@docusaurus/useIsBrowser";
+import { usePluginData } from "@docusaurus/useGlobalData";
 
 interface Message {
-  role: "user" | "assistant"
-  content: string
-  timestamp: Date
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
 }
 
 interface ChatInstance {
-  id: string
-  title: string
-  messages: Message[]
-  isLoading: boolean
-  error: string | null
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  title: string;
+  messages: Message[];
+  isLoading: boolean;
+  error: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface ChatState {
-  chats: ChatInstance[]
-  activeChatId: string | null
+  chats: ChatInstance[];
+  activeChatId: string | null;
 }
 
 const serializeChatState = (state: ChatState): string => {
@@ -42,11 +43,11 @@ const serializeChatState = (state: ChatState): string => {
       createdAt: chat.createdAt.toISOString(),
       updatedAt: chat.updatedAt.toISOString(),
     })),
-  })
-}
+  });
+};
 
 const deserializeChatState = (serialized: string): ChatState => {
-  const parsed = JSON.parse(serialized)
+  const parsed = JSON.parse(serialized);
   return {
     ...parsed,
     chats: parsed.chats.map((chat) => ({
@@ -58,10 +59,10 @@ const deserializeChatState = (serialized: string): ChatState => {
       createdAt: new Date(chat.createdAt),
       updatedAt: new Date(chat.updatedAt),
     })),
-  }
-}
+  };
+};
 
-const STORAGE_KEY = "docusaurus-chat-state"
+const STORAGE_KEY = "docusaurus-chat-state";
 
 const DEFAULT_CHAT_STATE: ChatState = {
   chats: [
@@ -76,85 +77,85 @@ const DEFAULT_CHAT_STATE: ChatState = {
     },
   ],
   activeChatId: "default",
-}
+};
 
 // Helper function to group chats by date
 const groupChatsByDate = (chats: ChatInstance[]) => {
-  const groups: { [key: string]: ChatInstance[] } = {}
+  const groups: { [key: string]: ChatInstance[] } = {};
 
   // Sort chats by updatedAt timestamp (most recent first)
   const sortedChats = [...chats].sort(
     (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
-  )
+  );
 
   sortedChats.forEach((chat) => {
-    const date = chat.updatedAt
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
+    const date = chat.updatedAt;
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-    let dateKey
+    let dateKey;
     if (date.toDateString() === today.toDateString()) {
-      dateKey = "Today"
+      dateKey = "Today";
     } else if (date.toDateString() === yesterday.toDateString()) {
-      dateKey = "Yesterday"
+      dateKey = "Yesterday";
     } else {
       dateKey = date.toLocaleDateString("en-US", {
         month: "long",
         year: "numeric",
-      })
+      });
     }
 
     if (!groups[dateKey]) {
-      groups[dateKey] = []
+      groups[dateKey] = [];
     }
-    groups[dateKey].push(chat)
-  })
+    groups[dateKey].push(chat);
+  });
 
-  return groups
-}
+  return groups;
+};
 
 export default function ChatPage(): JSX.Element {
-  const isBrowser = useIsBrowser()
-  const pluginData = usePluginData("docusaurus-plugin-chat-page")
-  const chatHistoryRef = useRef<HTMLDivElement>(null)
-  const [inputValue, setInputValue] = useState("")
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [chatState, setChatState] = useState<ChatState>(DEFAULT_CHAT_STATE)
+  const isBrowser = useIsBrowser();
+  const pluginData = usePluginData("docusaurus-plugin-chat-page");
+  const chatHistoryRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = useState("");
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [chatState, setChatState] = useState<ChatState>(DEFAULT_CHAT_STATE);
 
   // Load state from localStorage once browser is ready
   useEffect(() => {
     if (isBrowser && !isInitialized) {
-      const savedState = localStorage.getItem(STORAGE_KEY)
+      const savedState = localStorage.getItem(STORAGE_KEY);
       if (savedState) {
         try {
-          const loadedState = deserializeChatState(savedState)
-          setChatState(loadedState)
+          const loadedState = deserializeChatState(savedState);
+          setChatState(loadedState);
         } catch (error) {
-          console.error("Error loading chat state from localStorage:", error)
+          console.error("Error loading chat state from localStorage:", error);
         }
       }
-      setIsInitialized(true)
+      setIsInitialized(true);
     }
-  }, [isBrowser, isInitialized])
+  }, [isBrowser, isInitialized]);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
     if (isBrowser && isInitialized) {
       try {
-        localStorage.setItem(STORAGE_KEY, serializeChatState(chatState))
+        localStorage.setItem(STORAGE_KEY, serializeChatState(chatState));
       } catch (error) {
-        console.error("Error saving chat state to localStorage:", error)
+        console.error("Error saving chat state to localStorage:", error);
       }
     }
-  }, [chatState, isBrowser, isInitialized])
+  }, [chatState, isBrowser, isInitialized]);
 
   // Scroll to bottom of chat history when new messages are added
   useEffect(() => {
     if (chatHistoryRef.current) {
-      chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight
+      chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
-  }, [chatState.chats])
+  }, [chatState.chats]);
 
   // Defensive check for data
   if (!pluginData || typeof pluginData !== "object") {
@@ -167,21 +168,21 @@ export default function ChatPage(): JSX.Element {
           </div>
         </div>
       </Layout>
-    )
+    );
   }
 
   const { chunks, metadata, config } = pluginData as {
-    chunks: DocumentChunkWithEmbedding[]
+    chunks: DocumentChunkWithEmbedding[];
     metadata: {
-      totalChunks: number
-      lastUpdated: string
-    }
+      totalChunks: number;
+      lastUpdated: string;
+    };
     config: {
       openai: {
-        apiKey: string
-      }
-    }
-  }
+        apiKey: string;
+      };
+    };
+  };
 
   // Check for required data
   if (!chunks || !metadata || !config?.openai?.apiKey) {
@@ -199,32 +200,32 @@ export default function ChatPage(): JSX.Element {
           </div>
         </div>
       </Layout>
-    )
+    );
   }
 
-  const aiService = createAIService(config.openai)
+  const aiService = createAIService(config.openai);
 
   const findRelevantChunks = async (query: string, topK: number = 3) => {
     try {
-      const [queryEmbedding] = await aiService.generateEmbeddings([query])
+      const [queryEmbedding] = await aiService.generateEmbeddings([query]);
       const similarities = chunks.map((chunk) => ({
         chunk,
         similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
-      }))
+      }));
 
       return similarities
         .sort((a, b) => b.similarity - a.similarity)
         .slice(0, topK)
-        .map((item) => item.chunk)
+        .map((item) => item.chunk);
     } catch (error) {
-      console.error("Error getting embeddings:", error)
-      throw error
+      console.error("Error getting embeddings:", error);
+      throw error;
     }
-  }
+  };
 
   const createNewChat = () => {
-    const newChatId = `chat-${Date.now()}`
-    const now = new Date()
+    const newChatId = `chat-${Date.now()}`;
+    const now = new Date();
     setChatState((prev) => ({
       chats: [
         ...prev.chats,
@@ -239,31 +240,31 @@ export default function ChatPage(): JSX.Element {
         },
       ],
       activeChatId: newChatId,
-    }))
-    setInputValue("")
-  }
+    }));
+    setInputValue("");
+  };
 
   const switchChat = (chatId: string) => {
     setChatState((prev) => ({
       ...prev,
       activeChatId: chatId,
-    }))
-    setInputValue("")
-  }
+    }));
+    setInputValue("");
+  };
 
   const deleteChat = (chatId: string) => {
     setChatState((prev) => {
-      const newChats = prev.chats.filter((chat) => chat.id !== chatId)
-      let newActiveChatId = prev.activeChatId
+      const newChats = prev.chats.filter((chat) => chat.id !== chatId);
+      let newActiveChatId = prev.activeChatId;
 
       // If we're deleting the active chat, switch to another one
       if (chatId === prev.activeChatId) {
-        newActiveChatId = newChats[0]?.id || null
+        newActiveChatId = newChats[0]?.id || null;
       }
 
       // If this was the last chat, create a new one
       if (newChats.length === 0) {
-        const newChatId = `chat-${Date.now()}`
+        const newChatId = `chat-${Date.now()}`;
         return {
           chats: [
             {
@@ -277,32 +278,32 @@ export default function ChatPage(): JSX.Element {
             },
           ],
           activeChatId: newChatId,
-        }
+        };
       }
 
       return {
         chats: newChats,
         activeChatId: newActiveChatId,
-      }
-    })
-  }
+      };
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inputValue.trim() || !chatState.activeChatId) return
+    e.preventDefault();
+    if (!inputValue.trim() || !chatState.activeChatId) return;
 
     const activeChat = chatState.chats.find(
       (chat) => chat.id === chatState.activeChatId
-    )
-    if (!activeChat) return
+    );
+    if (!activeChat) return;
 
     const userMessage: Message = {
       role: "user",
       content: inputValue,
       timestamp: new Date(),
-    }
+    };
 
-    const now = new Date()
+    const now = new Date();
     setChatState((prev) => ({
       ...prev,
       chats: prev.chats.map((chat) =>
@@ -316,14 +317,14 @@ export default function ChatPage(): JSX.Element {
             }
           : chat
       ),
-    }))
-    setInputValue("")
+    }));
+    setInputValue("");
 
     try {
-      const relevantChunks = await findRelevantChunks(inputValue)
+      const relevantChunks = await findRelevantChunks(inputValue);
       const contextText = relevantChunks
         .map((chunk) => `${chunk.text}\nSource: ${chunk.metadata.filePath}`)
-        .join("\n\n")
+        .join("\n\n");
 
       const messages: ChatCompletionMessageParam[] = [
         {
@@ -345,13 +346,13 @@ ${contextText}`,
           content: msg.content,
         })),
         { role: "user", content: inputValue },
-      ]
+      ];
 
       const assistantMessage: Message = {
         role: "assistant",
         content: "",
         timestamp: new Date(),
-      }
+      };
 
       setChatState((prev) => ({
         ...prev,
@@ -363,10 +364,10 @@ ${contextText}`,
               }
             : chat
         ),
-      }))
+      }));
 
       for await (const content of aiService.generateChatCompletion(messages)) {
-        assistantMessage.content += content
+        assistantMessage.content += content;
 
         setChatState((prev) => ({
           ...prev,
@@ -384,7 +385,7 @@ ${contextText}`,
                 }
               : chat
           ),
-        }))
+        }));
       }
 
       // Update chat title based on first user message if it's still "New Chat"
@@ -399,7 +400,7 @@ ${contextText}`,
                 }
               : chat
           ),
-        }))
+        }));
       }
 
       // Final update after streaming is complete
@@ -413,9 +414,9 @@ ${contextText}`,
               }
             : chat
         ),
-      }))
+      }));
     } catch (error) {
-      console.error("Error:", error)
+      console.error("Error:", error);
       setChatState((prev) => ({
         ...prev,
         chats: prev.chats.map((chat) =>
@@ -427,13 +428,13 @@ ${contextText}`,
               }
             : chat
         ),
-      }))
+      }));
     }
-  }
+  };
 
   const activeChat = chatState.chats.find(
     (chat) => chat.id === chatState.activeChatId
-  )
+  );
 
   return (
     <Layout title="Chat" description="Chat with your documentation">
@@ -475,8 +476,8 @@ ${contextText}`,
                           <button
                             className={styles.deleteButton}
                             onClick={(e) => {
-                              e.stopPropagation()
-                              deleteChat(chat.id)
+                              e.stopPropagation();
+                              deleteChat(chat.id);
                             }}
                             title="Delete chat"
                           >
@@ -546,5 +547,5 @@ ${contextText}`,
         </div>
       </div>
     </Layout>
-  )
+  );
 }
