@@ -6,6 +6,7 @@ import Layout from "@theme/Layout";
 import ReactMarkdown from "react-markdown";
 import { cosineSimilarity } from "../../utils/vector";
 import { createAIService } from "../../services/ai";
+import type { ChatCompletionOptions } from "../../services/ai";
 import styles from "./styles.module.css";
 import useIsBrowser from "@docusaurus/useIsBrowser";
 import { usePluginData } from "@docusaurus/useGlobalData";
@@ -181,6 +182,12 @@ export default function ChatPage(): JSX.Element {
       openai: {
         apiKey: string;
       };
+      prompt?: {
+        systemPrompt?: string;
+        model?: string;
+        temperature?: number;
+        maxTokens?: number;
+      };
     };
   };
 
@@ -326,10 +333,7 @@ export default function ChatPage(): JSX.Element {
         .map((chunk) => `${chunk.text}\nSource: ${chunk.metadata.filePath}`)
         .join("\n\n");
 
-      const messages: ChatCompletionMessageParam[] = [
-        {
-          role: "system",
-          content: `You are a documentation assistant with a strictly limited scope. You can ONLY answer questions about the provided documentation context. You must follow these rules:
+      const defaultSystemPrompt = `You are a documentation assistant with a strictly limited scope. You can ONLY answer questions about the provided documentation context. You must follow these rules:
 
 1. ONLY answer questions that are directly related to the documentation context provided below
 2. If a question is not about the documentation, respond with: "I can only answer questions about the documentation. Your question appears to be about something else."
@@ -339,7 +343,19 @@ export default function ChatPage(): JSX.Element {
 6. If a question is partially about documentation but includes off-topic elements, only address the documentation-related parts
 
 Documentation context:
-${contextText}`,
+${contextText}`;
+
+      const systemPrompt = config.prompt?.systemPrompt 
+        ? `${config.prompt.systemPrompt}
+
+Documentation context:
+${contextText}`
+        : defaultSystemPrompt;
+
+      const messages: ChatCompletionMessageParam[] = [
+        {
+          role: "system",
+          content: systemPrompt,
         },
         ...activeChat.messages.map((msg) => ({
           role: msg.role,
@@ -366,7 +382,13 @@ ${contextText}`,
         ),
       }));
 
-      for await (const content of aiService.generateChatCompletion(messages)) {
+      const chatOptions: ChatCompletionOptions = {
+        model: config.prompt?.model,
+        temperature: config.prompt?.temperature,
+        maxTokens: config.prompt?.maxTokens,
+      };
+
+      for await (const content of aiService.generateChatCompletion(messages, chatOptions)) {
         assistantMessage.content += content;
 
         setChatState((prev) => ({

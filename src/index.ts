@@ -2,7 +2,7 @@
 
 import * as path from "path";
 
-import type { ChatPluginContent, OpenAIConfig } from "./types";
+import type { ChatPluginContent, OpenAIConfig, PromptConfig } from "./types";
 import { LoadContext, Plugin } from "@docusaurus/types";
 
 import type { EmbeddingCacheConfig } from "./types";
@@ -14,6 +14,7 @@ export interface PluginOptions {
   path?: string;
   openai?: OpenAIConfig;
   embeddingCache?: EmbeddingCacheConfig;
+  prompt?: PromptConfig;
 }
 
 export default function pluginChatPage(
@@ -30,6 +31,7 @@ export default function pluginChatPage(
     path: inputPath = "chat",
     openai,
     embeddingCache,
+    prompt,
   } = options;
 
   // Normalize the path
@@ -74,6 +76,7 @@ export default function pluginChatPage(
         ...content,
         config: {
           openai,
+          prompt,
         },
       });
 
@@ -83,6 +86,7 @@ export default function pluginChatPage(
           ...content,
           config: {
             openai,
+            prompt,
           },
         })
       );

@@ -57,9 +57,17 @@ export interface EmbeddingCacheConfig {
   path?: string // Cache file path (default: 'embeddings.json')
 }
 
+export interface PromptConfig {
+  systemPrompt?: string
+  model?: string
+  temperature?: number
+  maxTokens?: number
+}
+
 export interface PluginOptions {
   label?: string
   path?: string
   openai?: OpenAIConfig
   embeddingCache?: EmbeddingCacheConfig
+  prompt?: PromptConfig
 }

@@ -2,10 +2,17 @@ import OpenAI from "openai"
 import type { OpenAIConfig } from "../types"
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
 
+export interface ChatCompletionOptions {
+  model?: string
+  temperature?: number
+  maxTokens?: number
+}
+
 export interface AIService {
   generateEmbeddings(texts: string[]): Promise<number[][]>
   generateChatCompletion(
-    messages: ChatCompletionMessageParam[]
+    messages: ChatCompletionMessageParam[],
+    options?: ChatCompletionOptions
   ): AsyncGenerator<string, void, unknown>
 }
 
@@ -24,11 +31,16 @@ export function createAIService(config: OpenAIConfig): AIService {
       return response.data.map((item) => item.embedding)
     },
 
-    async *generateChatCompletion(messages: ChatCompletionMessageParam[]) {
+    async *generateChatCompletion(
+      messages: ChatCompletionMessageParam[],
+      options: ChatCompletionOptions = {}
+    ) {
       const completion = await client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: options.model || "gpt-4o-mini",
         messages,
         stream: true,
+        temperature: options.temperature,
+        max_tokens: options.maxTokens,
       })
 
       for await (const chunk of completion) {
