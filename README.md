@@ -1,6 +1,19 @@
-# docusaurus-plugin-chat-page
+# docusaurus-plugin-chat-page <!-- omit in toc -->
 
 A Docusaurus plugin that adds an AI-powered chat interface to your documentation site. Users can ask questions about your documentation and receive contextually relevant answers powered by OpenAI's GPT models.
+
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Installation](#installation)
+- [Configuration](#configuration)
+  - [Adding to Navigation](#adding-to-navigation)
+- [Environment Variables](#environment-variables)
+- [Usage](#usage)
+- [Requirements](#requirements)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
+- [Support](#support)
 
 ## Features
 
@@ -54,7 +67,74 @@ module.exports = {
       },
     ],
   ],
+};
+```
+
+### Configuration Options
+
+- `path` (optional): The URL path for the chat page. Defaults to `"chat"`.
+- `label` (optional): The label for the chat page. Defaults to `"Chat"`.
+- `openai.apiKey` (required): Your OpenAI API key for generating embeddings and chat responses.
+
+### Embedding Cache
+
+Control how embeddings are cached to speed up builds:
+
+```js
+{
+  embeddingCache: {
+    enabled: true, // Enable caching (default: true)
+    strategy: "hash", // Cache validation strategy
+    path: "embeddings.json" // Cache file path (default)
+  }
 }
+```
+
+**Cache Strategies:**
+- `"hash"` - Invalidate cache when content changes (recommended)
+- `"timestamp"` - Invalidate cache based on file modification time
+- `"manual"` - Never invalidate cache automatically
+
+### Custom Prompts
+
+Customize the AI assistant's behavior and model:
+
+```js
+{
+  prompt: {
+    systemPrompt: "You are a helpful assistant for our product documentation. Always be friendly and concise.",
+    model: "gpt-4o-mini", // OpenAI model to use
+    temperature: 0.7, // Response creativity (0-1)
+    maxTokens: 1000 // Maximum response length
+  }
+}
+```
+
+**Complete example with all options:**
+```js
+module.exports = {
+  plugins: [
+    [
+      "docusaurus-plugin-chat-page",
+      {
+        path: "chat",
+        openai: {
+          apiKey: process.env.OPENAI_API_KEY,
+        },
+        embeddingCache: {
+          enabled: true,
+          strategy: "hash"
+        },
+        prompt: {
+          systemPrompt: "You are a technical support assistant. Provide step-by-step solutions and always ask for clarification when needed.",
+          model: "gpt-4o-mini",
+          temperature: 0.3,
+          maxTokens: 800
+        }
+      },
+    ],
+  ],
+};
 ```
 
 ### Adding to Navigation
@@ -77,7 +157,7 @@ module.exports = {
       ],
     },
   },
-}
+};
 ```
 
 ## Environment Variables
