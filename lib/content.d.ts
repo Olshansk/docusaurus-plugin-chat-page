@@ -1,5 +1,5 @@
+import type { ChatPluginContent, EmbeddingCacheConfig, EmbeddingConfig, FileNode, OpenAIConfig } from "./types";
 import { LoadContext } from "@docusaurus/types";
-import type { FileNode, ChatPluginContent, OpenAIConfig, EmbeddingConfig, EmbeddingCacheConfig } from "./types";
 /**
  * Process a directory and build a tree structure
  */
