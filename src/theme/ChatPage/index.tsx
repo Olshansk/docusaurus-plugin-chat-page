@@ -1,163 +1,29 @@
-import { CHAT_DEFAULTS, DEFAULT_EMBEDDING_CONFIG, DEFAULT_PROMPT_CONFIG, STORAGE_KEYS } from "../../constants";
-import type { DocumentChunk, DocumentChunkWithEmbedding } from "../../types";
-import React, { useEffect, useRef, useState } from "react";
-
-import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import type { ChatCompletionOptions } from "../../services/ai";
+import React from "react";
 import Layout from "@theme/Layout";
-import ReactMarkdown from "react-markdown";
-import { cosineSimilarity } from "../../utils/vector";
-import { createAIService } from "../../services/ai";
-import styles from "./styles.module.css";
-import useIsBrowser from "@docusaurus/useIsBrowser";
 import { usePluginData } from "@docusaurus/useGlobalData";
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
-
-interface ChatInstance {
-  id: string;
-  title: string;
-  messages: Message[];
-  isLoading: boolean;
-  error: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface ChatState {
-  chats: ChatInstance[];
-  activeChatId: string | null;
-}
-
-const serializeChatState = (state: ChatState): string => {
-  return JSON.stringify({
-    ...state,
-    chats: state.chats.map((chat) => ({
-      ...chat,
-      messages: chat.messages.map((msg) => ({
-        ...msg,
-        timestamp: msg.timestamp.toISOString(),
-      })),
-      createdAt: chat.createdAt.toISOString(),
-      updatedAt: chat.updatedAt.toISOString(),
-    })),
-  });
-};
-
-const deserializeChatState = (serialized: string): ChatState => {
-  const parsed = JSON.parse(serialized);
-  return {
-    ...parsed,
-    chats: parsed.chats.map((chat) => ({
-      ...chat,
-      messages: chat.messages.map((msg) => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp),
-      })),
-      createdAt: new Date(chat.createdAt),
-      updatedAt: new Date(chat.updatedAt),
-    })),
-  };
-};
-
-const STORAGE_KEY = STORAGE_KEYS.CHAT_STATE;
-
-const DEFAULT_CHAT_STATE: ChatState = {
-  chats: [
-    {
-      id: CHAT_DEFAULTS.DEFAULT_CHAT_ID,
-      title: CHAT_DEFAULTS.NEW_CHAT_TITLE,
-      messages: [],
-      isLoading: false,
-      error: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ],
-  activeChatId: CHAT_DEFAULTS.DEFAULT_CHAT_ID,
-};
-
-// Helper function to group chats by date
-const groupChatsByDate = (chats: ChatInstance[]) => {
-  const groups: { [key: string]: ChatInstance[] } = {};
-
-  // Sort chats by updatedAt timestamp (most recent first)
-  const sortedChats = [...chats].sort(
-    (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
-  );
-
-  sortedChats.forEach((chat) => {
-    const date = chat.updatedAt;
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    let dateKey;
-    if (date.toDateString() === today.toDateString()) {
-      dateKey = "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      dateKey = "Yesterday";
-    } else {
-      dateKey = date.toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      });
-    }
-
-    if (!groups[dateKey]) {
-      groups[dateKey] = [];
-    }
-    groups[dateKey].push(chat);
-  });
-
-  return groups;
-};
+import type { DocumentChunkWithEmbedding } from "../../types";
+import { ChatSidebar } from "./components/ChatSidebar";
+import { ChatHistory } from "./components/ChatHistory";
+import { ChatInput } from "./components/ChatInput";
+import type { Message } from "./components/ChatMessage";
+import { useChatState } from "./hooks/useChatState";
+import { useAIChat } from "./hooks/useAIChat";
+import { CHAT_DEFAULTS } from "../../constants";
+import styles from "./styles.module.css";
 
 export default function ChatPage(): JSX.Element {
-  const isBrowser = useIsBrowser();
   const pluginData = usePluginData("docusaurus-plugin-chat-page");
-  const chatHistoryRef = useRef<HTMLDivElement>(null);
-  const [inputValue, setInputValue] = useState("");
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [chatState, setChatState] = useState<ChatState>(DEFAULT_CHAT_STATE);
-
-  // Load state from localStorage once browser is ready
-  useEffect(() => {
-    if (isBrowser && !isInitialized) {
-      const savedState = localStorage.getItem(STORAGE_KEY);
-      if (savedState) {
-        try {
-          const loadedState = deserializeChatState(savedState);
-          setChatState(loadedState);
-        } catch (error) {
-          console.error("Error loading chat state from localStorage:", error);
-        }
-      }
-      setIsInitialized(true);
-    }
-  }, [isBrowser, isInitialized]);
-
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    if (isBrowser && isInitialized) {
-      try {
-        localStorage.setItem(STORAGE_KEY, serializeChatState(chatState));
-      } catch (error) {
-        console.error("Error saving chat state to localStorage:", error);
-      }
-    }
-  }, [chatState, isBrowser, isInitialized]);
-
-  // Scroll to bottom of chat history when new messages are added
-  useEffect(() => {
-    if (chatHistoryRef.current) {
-      chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
-    }
-  }, [chatState.chats]);
+  const {
+    chatState,
+    createNewChat,
+    switchChat,
+    deleteChat,
+    addMessage,
+    updateChatLoading,
+    updateChatError,
+    updateChatTitle,
+    updateLastMessage,
+  } = useChatState();
 
   // Defensive check for data
   if (!pluginData || typeof pluginData !== "object") {
@@ -165,8 +31,7 @@ export default function ChatPage(): JSX.Element {
       <Layout title="Chat" description="Chat with your documentation">
         <div className="container margin-vert--lg">
           <div className={styles.errorMessage}>
-            No plugin data available. Make sure the plugin is properly
-            configured.
+            No plugin data available. Make sure the plugin is properly configured.
           </div>
         </div>
       </Layout>
@@ -208,8 +73,7 @@ export default function ChatPage(): JSX.Element {
       <Layout title="Chat" description="Chat with your documentation">
         <div className="container margin-vert--lg">
           <div className={styles.errorMessage}>
-            Missing required data. Please ensure the plugin is properly
-            configured with:
+            Missing required data. Please ensure the plugin is properly configured with:
             <ul>
               {!chunks && <li>Document chunks</li>}
               {!metadata && <li>Metadata</li>}
@@ -221,94 +85,10 @@ export default function ChatPage(): JSX.Element {
     );
   }
 
-  const aiService = createAIService(config.openai);
+  const { generateResponse } = useAIChat(chunks, config);
 
-  const findRelevantChunks = async (query: string, topK: number = DEFAULT_EMBEDDING_CONFIG.relevantChunks) => {
-    try {
-      const [queryEmbedding] = await aiService.generateEmbeddings([query]);
-      const similarities = chunks.map((chunk) => ({
-        chunk,
-        similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
-      }));
-
-      return similarities
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, topK)
-        .map((item) => item.chunk);
-    } catch (error) {
-      console.error("Error getting embeddings:", error);
-      throw error;
-    }
-  };
-
-  const createNewChat = () => {
-    const newChatId = `chat-${Date.now()}`;
-    const now = new Date();
-    setChatState((prev) => ({
-      chats: [
-        ...prev.chats,
-        {
-          id: newChatId,
-          title: CHAT_DEFAULTS.NEW_CHAT_TITLE,
-          messages: [],
-          isLoading: false,
-          error: null,
-          createdAt: now,
-          updatedAt: now,
-        },
-      ],
-      activeChatId: newChatId,
-    }));
-    setInputValue("");
-  };
-
-  const switchChat = (chatId: string) => {
-    setChatState((prev) => ({
-      ...prev,
-      activeChatId: chatId,
-    }));
-    setInputValue("");
-  };
-
-  const deleteChat = (chatId: string) => {
-    setChatState((prev) => {
-      const newChats = prev.chats.filter((chat) => chat.id !== chatId);
-      let newActiveChatId = prev.activeChatId;
-
-      // If we're deleting the active chat, switch to another one
-      if (chatId === prev.activeChatId) {
-        newActiveChatId = newChats[0]?.id || null;
-      }
-
-      // If this was the last chat, create a new one
-      if (newChats.length === 0) {
-        const newChatId = `chat-${Date.now()}`;
-        return {
-          chats: [
-            {
-              id: newChatId,
-              title: CHAT_DEFAULTS.NEW_CHAT_TITLE,
-              messages: [],
-              isLoading: false,
-              error: null,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          ],
-          activeChatId: newChatId,
-        };
-      }
-
-      return {
-        chats: newChats,
-        activeChatId: newActiveChatId,
-      };
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim() || !chatState.activeChatId) return;
+  const handleSubmit = async (query: string) => {
+    if (!chatState.activeChatId) return;
 
     const activeChat = chatState.chats.find(
       (chat) => chat.id === chatState.activeChatId
@@ -317,147 +97,40 @@ export default function ChatPage(): JSX.Element {
 
     const userMessage: Message = {
       role: "user",
-      content: inputValue,
+      content: query,
       timestamp: new Date(),
     };
 
-    const now = new Date();
-    setChatState((prev) => ({
-      ...prev,
-      chats: prev.chats.map((chat) =>
-        chat.id === chatState.activeChatId
-          ? {
-              ...chat,
-              messages: [...chat.messages, userMessage],
-              isLoading: true,
-              error: null,
-              updatedAt: now,
-            }
-          : chat
-      ),
-    }));
-    setInputValue("");
+    // Add user message and set loading state
+    addMessage(chatState.activeChatId, userMessage);
+    updateChatLoading(chatState.activeChatId, true);
 
     try {
-      const relevantChunks = await findRelevantChunks(
-        inputValue,
-        config.embedding?.relevantChunks || DEFAULT_EMBEDDING_CONFIG.relevantChunks
-      );
-      const contextText = relevantChunks
-        .map((chunk) => {
-          console.log(`[DEBUG] Chunk metadata:`, chunk.metadata);
-          return `${chunk.text}\nSource: ${chunk.metadata.fileURL || chunk.metadata.filePath}`;
-        })
-        .join("\n\n");
-
-      // Build the system prompt for the documentation assistant.
-      const basePrompt = config.prompt?.systemPrompt || DEFAULT_PROMPT_CONFIG.systemPrompt;
-
-      console.log("[OLSHANSKY DEBUG] Base prompt:", basePrompt);
-      const systemPrompt = `${basePrompt}\n\nDocumentation context:\n${contextText}`;
-
-      const messages: ChatCompletionMessageParam[] = [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        ...activeChat.messages.map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        })),
-        { role: "user", content: inputValue },
-      ];
-
       const assistantMessage: Message = {
         role: "assistant",
         content: "",
         timestamp: new Date(),
       };
 
-      setChatState((prev) => ({
-        ...prev,
-        chats: prev.chats.map((chat) =>
-          chat.id === chatState.activeChatId
-            ? {
-                ...chat,
-                messages: [...chat.messages, assistantMessage],
-              }
-            : chat
-        ),
-      }));
+      // Add empty assistant message
+      addMessage(chatState.activeChatId, assistantMessage);
 
-      const chatOptions: ChatCompletionOptions = {
-        model: config.prompt?.model,
-        temperature: config.prompt?.temperature,
-        maxTokens: config.prompt?.maxTokens,
-      };
-
-      for await (const content of aiService.generateChatCompletion(
-        messages,
-        chatOptions
-      )) {
+      // Stream the AI response
+      for await (const content of generateResponse(query, activeChat.messages)) {
         assistantMessage.content += content;
-
-        setChatState((prev) => ({
-          ...prev,
-          chats: prev.chats.map((chat) =>
-            chat.id === chatState.activeChatId
-              ? {
-                  ...chat,
-                  messages: [
-                    ...chat.messages.slice(0, -1),
-                    {
-                      ...assistantMessage,
-                      content: assistantMessage.content,
-                    },
-                  ],
-                }
-              : chat
-          ),
-        }));
+        updateLastMessage(chatState.activeChatId, assistantMessage.content);
       }
 
       // Update chat title based on first user message if it's still the default
       if (activeChat.title === CHAT_DEFAULTS.NEW_CHAT_TITLE) {
-        setChatState((prev) => ({
-          ...prev,
-          chats: prev.chats.map((chat) =>
-            chat.id === chatState.activeChatId
-              ? {
-                  ...chat,
-                  title: userMessage.content.slice(0, 30) + "...",
-                }
-              : chat
-          ),
-        }));
+        updateChatTitle(chatState.activeChatId, userMessage.content.slice(0, 30) + "...");
       }
 
       // Final update after streaming is complete
-      setChatState((prev) => ({
-        ...prev,
-        chats: prev.chats.map((chat) =>
-          chat.id === chatState.activeChatId
-            ? {
-                ...chat,
-                isLoading: false,
-              }
-            : chat
-        ),
-      }));
+      updateChatLoading(chatState.activeChatId, false);
     } catch (error) {
       console.error("Error:", error);
-      setChatState((prev) => ({
-        ...prev,
-        chats: prev.chats.map((chat) =>
-          chat.id === chatState.activeChatId
-            ? {
-                ...chat,
-                isLoading: false,
-                error: "Failed to get response. Please try again.",
-              }
-            : chat
-        ),
-      }));
+      updateChatError(chatState.activeChatId, "Failed to get response. Please try again.");
     }
   };
 
@@ -470,107 +143,31 @@ export default function ChatPage(): JSX.Element {
       <div className="container margin-vert--lg">
         <h1>Chat with Documentation</h1>
         <p>
-          Ask questions about your documentation and get AI-powered answers.
+          Ask questions about your documentation and get AI-powered answers.{" "}
+          {metadata.totalChunks} chunks of documentation indexed, last updated{" "}
           {new Date(metadata.lastUpdated).toLocaleDateString()}.
         </p>
 
         <div className={styles.chatContainer}>
-          {/* Side Menu */}
-          <div className={styles.chatSideMenu}>
-            <button
-              className={styles.newChatButton}
-              onClick={createNewChat}
-              title="Start a new chat"
-            >
-              + New Chat
-            </button>
-            <div className={styles.chatList}>
-              {Object.entries(groupChatsByDate(chatState.chats)).map(
-                ([dateGroup, chats]) => (
-                  <div key={dateGroup} className={styles.chatGroup}>
-                    <div className={styles.chatGroupHeader}>{dateGroup}</div>
-                    {chats.map((chat) => (
-                      <div
-                        key={chat.id}
-                        className={`${styles.chatListItem} ${
-                          chat.id === chatState.activeChatId
-                            ? styles.active
-                            : ""
-                        }`}
-                        onClick={() => switchChat(chat.id)}
-                      >
-                        <span className={styles.chatTitle}>{chat.title}</span>
-                        {chatState.chats.length > 1 && (
-                          <button
-                            className={styles.deleteButton}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteChat(chat.id);
-                            }}
-                            title="Delete chat"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )
-              )}
-            </div>
-          </div>
+          <ChatSidebar
+            chats={chatState.chats}
+            activeChatId={chatState.activeChatId}
+            onNewChat={createNewChat}
+            onSwitchChat={switchChat}
+            onDeleteChat={deleteChat}
+          />
 
-          {/* Chat Interface */}
           <div className={styles.chatMain}>
-            <div className={styles.chatHistory} ref={chatHistoryRef}>
-              {activeChat?.messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`${styles.message} ${
-                    message.role === "assistant"
-                      ? styles.assistantMessage
-                      : styles.userMessage
-                  }`}
-                >
-                  <div className={styles.messageContent}>
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
-                  </div>
-                  <div className={styles.messageTimestamp}>
-                    {message.timestamp.toLocaleTimeString()}
-                  </div>
-                </div>
-              ))}
-              {activeChat?.isLoading && (
-                <div className={styles.loadingIndicator}>
-                  <span>●</span>
-                  <span>●</span>
-                  <span>●</span>
-                </div>
-              )}
-              {activeChat?.error && (
-                <div className={styles.errorMessage}>{activeChat.error}</div>
-              )}
-            </div>
+            <ChatHistory
+              messages={activeChat?.messages || []}
+              isLoading={activeChat?.isLoading || false}
+              error={activeChat?.error || null}
+            />
 
-            <form onSubmit={handleSubmit} className={styles.chatInputContainer}>
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask a question about the documentation..."
-                className={styles.chatInput}
-                disabled={!activeChat || activeChat.isLoading}
-              />
-              <button
-                type="submit"
-                className={styles.sendButton}
-                disabled={
-                  !activeChat || activeChat.isLoading || !inputValue.trim()
-                }
-              >
-                Send
-              </button>
-            </form>
+            <ChatInput
+              onSubmit={handleSubmit}
+              disabled={!activeChat || activeChat.isLoading}
+            />
           </div>
         </div>
       </div>
