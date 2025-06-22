@@ -1,51 +1,22 @@
-# docusaurus-plugin-chat-page <!-- omit in toc -->
+# Docusaurus Plugin Chat Page
 
-A Docusaurus plugin that adds an AI-powered chat interface to your documentation site. Users can ask questions about your documentation and receive contextually relevant answers powered by OpenAI's GPT models.
+**AI-powered documentation assistant for your Docusaurus site** 🤖
 
-- [Features](#features)
-- [How It Works](#how-it-works)
-- [Installation](#installation)
-- [Configuration](#configuration)
-  - [Configuration Options](#configuration-options)
-  - [Embedding Cache](#embedding-cache)
-  - [Custom Prompts](#custom-prompts)
-  - [Embedding Configuration](#embedding-configuration)
-  - [Adding to Navigation](#adding-to-navigation)
-- [Environment Variables](#environment-variables)
-- [Usage](#usage)
-- [Requirements](#requirements)
-- [Security](#security)
-- [Contributing](#contributing)
-- [License](#license)
-- [Support](#support)
+Transform your static documentation into an interactive experience. Users can ask questions in natural language and get instant, contextually relevant answers powered by OpenAI's GPT models.
 
-## Features
+<!-- GIFT SECTION PLACEHOLDER - TO BE UPDATED -->
 
-- 🤖 AI-powered documentation assistant
-- 🔍 Semantic search using embeddings
-- 💨 Fast client-side similarity search
-- 🏗️ Build-time content processing
-- 🔒 Secure (API keys only used at build time)
-- 💅 Beautiful UI that matches your Docusaurus theme
-- ⚡ Real-time streaming responses
-- 📱 Responsive design
+> **🎁 Looking for a special offer?**
+>
+> [Placeholder for gift/special offer details - to be added]
 
-## How It Works
+---
 
-1. **Build Time:**
+## 🚀 Quick Start
 
-   - Processes your documentation content
-   - Splits content into manageable chunks
-   - Generates embeddings using OpenAI's API
-   - Creates a static JSON file with content and embeddings
+Get up and running in under 5 minutes:
 
-2. **Runtime:**
-
-   - Performs client-side similarity search to find relevant documentation
-   - Uses OpenAI's Chat API to generate contextual answers
-   - Streams responses in real-time for better UX
-
-## Installation
+### 1. Install
 
 ```bash
 npm install docusaurus-plugin-chat-page
@@ -53,116 +24,9 @@ npm install docusaurus-plugin-chat-page
 yarn add docusaurus-plugin-chat-page
 ```
 
-## Configuration
+### 2. Configure
 
-Add the plugin to your `docusaurus.config.js`:
-
-```js
-module.exports = {
-  // ...
-  plugins: [
-    [
-      "docusaurus-plugin-chat-page",
-      {
-        path: "chat", // URL path for the chat page
-        openai: {
-          apiKey: process.env.OPENAI_API_KEY, // Your OpenAI API key
-        },
-      },
-    ],
-  ],
-};
-```
-
-### Configuration Options
-
-- `path` (optional): The URL path for the chat page. Defaults to `"chat"`.
-- `label` (optional): The label for the chat page. Defaults to `"Chat"`.
-- `baseURL` (optional): Base URL for generating clickable documentation links in responses (e.g., `"https://docs.example.com"`).
-- `openai.apiKey` (required): Your OpenAI API key for generating embeddings and chat responses.
-
-### Embedding Cache
-
-Control how embeddings are cached to speed up builds:
-
-```js
-{
-  embeddingCache: {
-    enabled: true, // Enable caching (default: true)
-    strategy: "hash", // Cache validation strategy
-    path: "embeddings.json" // Cache file path (default)
-  }
-}
-```
-
-**Cache Strategies:**
-
-- `"hash"` - Invalidate cache when content changes (recommended for development)
-- `"timestamp"` - Invalidate cache based on file modification time
-- `"manual"` - Never invalidate cache automatically (recommended for CI/CD)
-
-**CI/CD Performance:**
-
-For faster CI builds, commit the embeddings cache to git:
-
-```gitignore
-# In .gitignore - keep embeddings for CI efficiency
-.docusaurus/*
-!.docusaurus/embeddings.json
-```
-
-**Regenerating Embeddings:**
-
-To regenerate embeddings with manual strategy:
-1. Temporarily change `strategy: "manual"` to `strategy: "hash"`
-2. Run build (embeddings will regenerate)
-3. Change back to `strategy: "manual"`
-4. Commit updated `embeddings.json`
-
-### Custom Prompts
-
-Customize the AI assistant's behavior and model:
-
-```js
-{
-  prompt: {
-    systemPrompt: "You are a helpful assistant for our product documentation. Always be friendly and concise.",
-    model: "gpt-4o-mini", // OpenAI model to use
-    temperature: 0.7, // Response creativity (0-1)
-    maxTokens: 1000 // Maximum response length
-  }
-}
-```
-
-### Embedding Configuration
-
-Customize how content is processed and embedded:
-
-```js
-{
-  embedding: {
-    model: "text-embedding-3-small", // OpenAI embedding model
-    chunkSize: 1500, // Maximum characters per chunk
-    chunkingStrategy: "headers", // "headers" or "paragraphs"
-    batchSize: 10, // Embeddings per API batch
-    maxChunksPerFile: 10, // Maximum chunks per file
-    relevantChunks: 3 // Number of chunks to include in responses
-  }
-}
-```
-
-**Chunking Strategies:**
-
-- `"headers"` - Split content at markdown headers with size fallback (recommended)
-- `"paragraphs"` - Split content at paragraph boundaries
-
-**Available Models:**
-
-- `"text-embedding-3-small"` - Fast and cost-effective (default)
-- `"text-embedding-3-large"` - Higher accuracy, more expensive
-- `"text-embedding-ada-002"` - Legacy model
-
-**Complete example with all options:**
+Add to your `docusaurus.config.js`:
 
 ```js
 module.exports = {
@@ -171,14 +35,116 @@ module.exports = {
       "docusaurus-plugin-chat-page",
       {
         path: "chat",
-        baseURL: "https://docs.example.com", // Generate clickable links
         openai: {
           apiKey: process.env.OPENAI_API_KEY,
         },
-        embeddingCache: {
-          enabled: true,
-          strategy: "hash",
+      },
+    ],
+  ],
+};
+```
+
+### 3. Set API Key
+
+Create `.env` file:
+
+```env
+OPENAI_API_KEY=your-openai-api-key-here
+```
+
+### 4. Build & Run
+
+```bash
+npm run build && npm start
+```
+
+Visit `/chat` on your site - that's it! 🎉
+
+---
+
+## ⚡ Why Use This Plugin?
+
+| Feature                      | Benefit                              |
+| ---------------------------- | ------------------------------------ |
+| 🤖 **AI-Powered**            | Natural language Q&A about your docs |
+| 🔍 **Smart Search**          | Semantic search using embeddings     |
+| ⚡ **Fast Runtime**          | Client-side similarity search        |
+| 🔒 **Secure**                | API keys only used at build time     |
+| 💅 **Theme Integration**     | Matches your Docusaurus theme        |
+| 📱 **Responsive**            | Works on all devices                 |
+| 🏗️ **Build-Time Processing** | No runtime performance impact        |
+
+---
+
+## 📋 Configuration Options
+
+### Basic Configuration
+
+| Option          | Type     | Default      | Description                      |
+| --------------- | -------- | ------------ | -------------------------------- |
+| `path`          | `string` | `"chat"`     | URL path for chat page           |
+| `label`         | `string` | `"Chat"`     | Navigation label                 |
+| `baseURL`       | `string` | `undefined`  | Base URL for documentation links |
+| `openai.apiKey` | `string` | **Required** | OpenAI API key                   |
+
+### OpenAI Models & Settings
+
+| Option                | Type     | Default         | Description               |
+| --------------------- | -------- | --------------- | ------------------------- |
+| `prompt.model`        | `string` | `"gpt-4o-mini"` | Chat completion model     |
+| `prompt.temperature`  | `number` | `0.7`           | Response creativity (0-1) |
+| `prompt.maxTokens`    | `number` | `1000`          | Maximum response length   |
+| `prompt.systemPrompt` | `string` | Built-in        | Custom system prompt      |
+
+### Embedding Configuration
+
+| Option                       | Type     | Default                    | Description                   |
+| ---------------------------- | -------- | -------------------------- | ----------------------------- |
+| `embedding.model`            | `string` | `"text-embedding-3-small"` | Embedding model               |
+| `embedding.chunkSize`        | `number` | `1500`                     | Max characters per chunk      |
+| `embedding.chunkingStrategy` | `string` | `"headers"`                | `"headers"` or `"paragraphs"` |
+| `embedding.batchSize`        | `number` | `10`                       | Embeddings per API batch      |
+| `embedding.maxChunksPerFile` | `number` | `10`                       | Max chunks per file           |
+| `embedding.relevantChunks`   | `number` | `3`                        | Chunks included in responses  |
+
+### Caching Options
+
+| Option                    | Type      | Default             | Description                            |
+| ------------------------- | --------- | ------------------- | -------------------------------------- |
+| `embeddingCache.enabled`  | `boolean` | `true`              | Enable embedding cache                 |
+| `embeddingCache.strategy` | `string`  | `"hash"`            | `"hash"`, `"timestamp"`, or `"manual"` |
+| `embeddingCache.path`     | `string`  | `"embeddings.json"` | Cache file location                    |
+
+---
+
+## 🛠️ Complete Configuration Example
+
+```js
+module.exports = {
+  plugins: [
+    [
+      "docusaurus-plugin-chat-page",
+      {
+        // Basic settings
+        path: "chat",
+        label: "AI Assistant",
+        baseURL: "https://docs.example.com",
+
+        // OpenAI configuration
+        openai: {
+          apiKey: process.env.OPENAI_API_KEY,
         },
+
+        // Chat behavior
+        prompt: {
+          systemPrompt:
+            "You are a helpful technical assistant. Always provide step-by-step solutions.",
+          model: "gpt-4o-mini",
+          temperature: 0.3,
+          maxTokens: 800,
+        },
+
+        // Content processing
         embedding: {
           model: "text-embedding-3-small",
           chunkSize: 2000,
@@ -187,12 +153,11 @@ module.exports = {
           maxChunksPerFile: 15,
           relevantChunks: 5,
         },
-        prompt: {
-          systemPrompt:
-            "You are a technical support assistant. Provide step-by-step solutions and always ask for clarification when needed.",
-          model: "gpt-4o-mini",
-          temperature: 0.3,
-          maxTokens: 800,
+
+        // Performance optimization
+        embeddingCache: {
+          enabled: true,
+          strategy: "hash", // Use "manual" for CI/CD
         },
       },
     ],
@@ -200,98 +165,195 @@ module.exports = {
 };
 ```
 
-### Documentation Links
+---
 
-Configure `baseURL` to generate clickable links in chat responses:
+## 🔗 Add to Navigation
 
-```js
-{
-  baseURL: "https://docs.example.com"
-}
-```
-
-**URL Transformation:**
-- `docs/setup/installation.md` → `https://docs.example.com/setup/installation`
-- `1_operate/3_configs/supplier_config.md` → `https://docs.example.com/operate/configs/supplier-config`
-
-**Features:**
-- Removes `.md`/`.mdx` extensions
-- Strips numeric prefixes (e.g., `1_operate` → `operate`)
-- Converts underscores to hyphens
-- Removes `docs/` and `src/pages/` prefixes
-
-**Example Response:**
-```
-Instead of: Source: 1_operate/3_configs/supplier_config.md
-You get:    Source: https://docs.example.com/operate/configs/supplier-config
-```
-
-### Adding to Navigation
-
-To add the chat page to your site's navigation bar, update the `themeConfig` in your `docusaurus.config.js`:
+Include the chat page in your site navigation:
 
 ```js
 module.exports = {
-  // ...
   themeConfig: {
     navbar: {
       items: [
-        // ... your other navbar items
+        // ... other items
         {
-          to: "/chat", // Make sure this matches your plugin's path configuration
+          to: "/chat",
           label: "Chat",
-          position: "left",
+          position: "right",
         },
-        // ...
       ],
     },
   },
 };
 ```
 
-## Environment Variables
+---
 
-Create a `.env` file in your project root:
+## 🎯 How It Works
 
-```env
-OPENAI_API_KEY=your-api-key-here
+### Build Time
+
+1. **Content Processing** - Scans your markdown files
+2. **Chunking** - Splits content into manageable pieces
+3. **Embedding Generation** - Creates vector embeddings using OpenAI
+4. **Static Export** - Saves embeddings as static JSON
+
+### Runtime
+
+1. **User Query** - User asks a question
+2. **Similarity Search** - Finds relevant content chunks (client-side)
+3. **AI Response** - Generates contextual answer using OpenAI
+4. **Real-time Streaming** - Displays response as it's generated
+
+---
+
+## 💡 Performance Tips
+
+### For Development
+
+```js
+embeddingCache: {
+  strategy: "hash", // Regenerates when content changes
+}
 ```
 
-## Usage
+### For CI/CD
 
-Once installed and configured, the plugin will:
+```js
+embeddingCache: {
+  strategy: "manual", // Never regenerates automatically
+}
+```
 
-1. Add a chat page to your documentation site at `/chat` (or your configured path)
-2. Process your documentation during the build phase
-3. Enable users to ask questions about your documentation
+Commit `embeddings.json` to git for faster CI builds:
 
-Users can:
+```gitignore
+# .gitignore
+.docusaurus/*
+!.docusaurus/embeddings.json
+```
 
-- Ask questions in natural language
-- Get AI-generated answers based on your documentation content
-- See source references for the answers
-- View conversation history
+---
 
-## Requirements
+## 🔧 Advanced Features
 
-- Docusaurus v2 or higher
-- Node.js 16 or higher
-- OpenAI API key
+### URL Link Generation
 
-## Security
+Configure `baseURL` to generate clickable documentation links:
 
-- OpenAI API key is only used at build time for generating embeddings
-- No sensitive data is exposed to the client
-- All API calls are made with appropriate security headers
+| File Path                                | Generated URL                                              |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| `docs/setup/installation.md`             | `https://docs.example.com/setup/installation`              |
+| `1_operate/3_configs/supplier_config.md` | `https://docs.example.com/operate/configs/supplier_config` |
 
-## Contributing
+**Automatic transformations:**
 
-Contributions are welcome! Please read our contributing guidelines for details.
+- ✅ Removes `.md`/`.mdx` extensions
+- ✅ Strips numeric prefixes (`1_operate` → `operate`)
+- ✅ Converts underscores to hyphens in directories
+- ✅ Environment-aware (localhost vs production)
 
-## License
+### Custom System Prompts
 
-MIT
+```js
+prompt: {
+  systemPrompt: `You are a technical support specialist for our API documentation.
 
-## Support
+Rules:
+- Always provide code examples when relevant
+- Include links to relevant documentation sections
+- If unsure, ask for clarification
+- Keep responses concise but complete`,
+}
+```
 
-If you encounter any issues or have questions, please file an issue on GitHub.
+### Advanced Chunking
+
+```js
+embedding: {
+  chunkingStrategy: "headers", // Splits at markdown headers
+  chunkSize: 1500, // Optimal for most use cases
+  maxChunksPerFile: 10, // Prevents overly long files from dominating
+}
+```
+
+---
+
+## 📊 Model Comparison
+
+| Model                    | Speed  | Cost   | Quality    | Use Case               |
+| ------------------------ | ------ | ------ | ---------- | ---------------------- |
+| `gpt-4o-mini`            | ⚡⚡⚡ | 💰     | ⭐⭐⭐     | Most documentation     |
+| `gpt-4o`                 | ⚡⚡   | 💰💰💰 | ⭐⭐⭐⭐⭐ | Complex technical docs |
+| `text-embedding-3-small` | ⚡⚡⚡ | 💰     | ⭐⭐⭐     | Default embedding      |
+| `text-embedding-3-large` | ⚡⚡   | 💰💰   | ⭐⭐⭐⭐   | Higher accuracy needs  |
+
+---
+
+## 🛡️ Security & Privacy
+
+- ✅ **Build-time only** - API keys never exposed to browsers
+- ✅ **No data collection** - User queries aren't stored
+- ✅ **Local processing** - Similarity search runs client-side
+- ✅ **Secure headers** - All API calls use proper authentication
+
+---
+
+## 📋 Requirements
+
+| Requirement    | Version       |
+| -------------- | ------------- |
+| **Docusaurus** | v2.0+         |
+| **Node.js**    | v16+          |
+| **OpenAI API** | Valid API key |
+
+---
+
+## 🚨 Troubleshooting
+
+| Issue                  | Solution                                           |
+| ---------------------- | -------------------------------------------------- |
+| **"API key required"** | Set `OPENAI_API_KEY` in `.env` file                |
+| **Build fails**        | Check API key permissions and rate limits          |
+| **No responses**       | Verify `baseURL` configuration                     |
+| **Slow builds**        | Enable caching with `embeddingCache.enabled: true` |
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. **Commit** your changes: `git commit -m 'Add amazing feature'`
+4. **Push** to the branch: `git push origin feature/amazing-feature`
+5. **Open** a Pull Request
+
+### Development Setup
+
+```bash
+git clone https://github.com/your-username/docusaurus-plugin-chat-page.git
+cd docusaurus-plugin-chat-page
+yarn install
+yarn build
+```
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+## 💬 Support
+
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/nichnarmada/docusaurus-plugin-chat-page/issues)
+- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/nichnarmada/docusaurus-plugin-chat-page/discussions)
+- 📧 **Email Support**: [Coming soon]
+
+---
+
+**Made with ❤️ for the Docusaurus community**
