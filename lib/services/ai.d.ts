@@ -1,5 +1,5 @@
-import type { OpenAIConfig } from "../types";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import type { OpenAIConfig } from "../types";
 export interface ChatCompletionOptions {
     model?: string;
     temperature?: number;

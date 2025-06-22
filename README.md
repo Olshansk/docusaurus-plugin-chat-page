@@ -103,7 +103,7 @@ Visit `/chat` on your site - that's it! 🎉
 | `embedding.model`            | `string` | `"text-embedding-3-small"` | Embedding model               |
 | `embedding.chunkSize`        | `number` | `1500`                     | Max characters per chunk      |
 | `embedding.chunkingStrategy` | `string` | `"headers"`                | `"headers"` or `"paragraphs"` |
-| `embedding.batchSize`        | `number` | `10`                       | Embeddings per API batch      |
+| `embedding.batchSize`        | `number` | `20`                       | Chunks per OpenAI API call (1-100) |
 | `embedding.maxChunksPerFile` | `number` | `10`                       | Max chunks per file           |
 | `embedding.relevantChunks`   | `number` | `3`                        | Chunks included in responses  |
 
@@ -275,8 +275,39 @@ embedding: {
   chunkingStrategy: "headers", // Splits at markdown headers
   chunkSize: 1500, // Optimal for most use cases
   maxChunksPerFile: 10, // Prevents overly long files from dominating
+  batchSize: 10, // How many chunks to process per API call
 }
 ```
+
+<details>
+<summary>🚀 Batch Size Optimization</summary>
+
+**What is batch size?**
+- Number of text chunks sent to OpenAI API in a single request
+- OpenAI allows up to 100 inputs per embedding API call
+- Larger batches = fewer API calls = faster processing
+
+**Batch size recommendations:**
+
+| Documentation Size | Recommended Batch Size | Why |
+|-------------------|----------------------|-----|
+| **Small** (< 50 chunks) | `batchSize: 5` | Conservative, good for testing |
+| **Medium** (50-200 chunks) | `batchSize: 10` | Balanced speed and reliability |
+| **Large** (200+ chunks) | `batchSize: 20` | Faster processing, fewer API calls (default) |
+| **Very Large** (500+ chunks) | `batchSize: 50` | Maximum speed, requires stable connection |
+
+**Example batch processing:**
+```
+📊 100 chunks with batchSize: 10
+   • API calls needed: 10 (100 ÷ 10)
+   • Processing: 10 chunks per call
+   
+📊 100 chunks with batchSize: 25  
+   • API calls needed: 4 (100 ÷ 25)
+   • Processing: 25 chunks per call (75% faster!)
+```
+
+</details>
 
 ---
 
@@ -318,6 +349,68 @@ embedding: {
 | **Build fails**        | Check API key permissions and rate limits          |
 | **No responses**       | Verify `baseURL` configuration                     |
 | **Slow builds**        | Enable caching with `embeddingCache.enabled: true` |
+
+---
+
+## 🚀 Deployment
+
+### Deploying to Vercel
+
+To deploy a Docusaurus site using this plugin to Vercel:
+
+#### 1. Vercel Configuration
+
+| Setting | Value |
+|---------|-------|
+| **Build Command** | `yarn build` |
+| **Output Directory** | `build` |
+| **Install Command** | `yarn install` |
+
+#### 2. Environment Variables
+
+Add the following environment variable in your Vercel dashboard:
+
+```
+OPENAI_API_KEY=your-openai-api-key-here
+```
+
+#### 3. Deployment Steps
+
+1. **Push your Docusaurus site** (not just the plugin) to GitHub
+2. **Connect Vercel** to your GitHub repository
+3. **Configure build settings** as shown above
+4. **Add environment variables** in Vercel dashboard
+5. **Deploy** - Vercel will automatically build and deploy
+
+#### 4. Build Process
+
+```bash
+# Vercel runs these commands automatically:
+yarn install                    # Install dependencies
+yarn build                     # Build static site with embeddings
+# Plugin processes docs at build time
+# OpenAI API key used to generate embeddings
+# Static site deployed with pre-computed embeddings
+```
+
+#### 5. Important Notes
+
+- ✅ **OpenAI API key** only used at build time (secure)
+- ✅ **Embeddings** generated during build, not at runtime
+- ✅ **No serverless functions** needed - fully static
+- ⚠️ **Build time** may be longer due to embedding generation
+- 💡 **Use embedding cache** to speed up subsequent builds
+
+#### 6. Other Platforms
+
+This plugin works with any static hosting platform:
+
+| Platform | Build Command | Output Directory |
+|----------|--------------|------------------|
+| **Vercel** | `yarn build` | `build` |
+| **Netlify** | `yarn build` | `build` |
+| **GitHub Pages** | `yarn build` | `build` |
+| **AWS S3** | `yarn build` | `build` |
 
 ---
 

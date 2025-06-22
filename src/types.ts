@@ -16,9 +16,37 @@ export interface DocumentChunk {
   text: string
   metadata: {
     filePath: string
+    fileURL?: string
     title?: string
     section?: string
     position?: number
+    fileStats?: {
+      fileSizeBytes: number
+      fileSizeKB: number
+      totalChunksInFile: number
+      totalEmbeddingsInFile: number
+      fileWordCount: number
+      estimatedReadingTimeMinutes: number
+      averageChunkSizeBytes: number
+      compressionRatio: number
+    }
+    chunkStats?: {
+      chunkIndex: number
+      chunkSizeBytes: number
+      chunkSizeKB: number
+      chunkWordCount: number
+      chunkReadingTimeSeconds: number
+      isLargeChunk: boolean
+      chunkType: string
+    }
+    processingStats?: {
+      processedAt: string
+      chunkingStrategy: string
+      maxChunkSize: number
+      embeddingModel: string
+      wasTruncated: boolean
+      originalChunkCount: number
+    }
     [key: string]: any
   }
 }
@@ -45,6 +73,35 @@ export interface ChatPluginContent {
     totalChunks: number
     lastUpdated: string
     contentHash?: string
+    globalStats?: {
+      totalFiles: number
+      totalOriginalBytes: number
+      totalOriginalKB: number
+      totalProcessedBytes: number
+      totalProcessedKB: number
+      totalWords: number
+      totalReadingTimeMinutes: number
+      averageChunksPerFile: number
+      compressionRatio: number
+      largestFileBytes: number
+      smallestFileBytes: number
+      processingTimeSeconds: number
+      embeddingModel: string
+      chunkingStrategy: string
+      maxChunkSize: number
+      actualMaxChunkSize: number
+      actualMinChunkSize: number
+    }
+    fileBreakdown?: Array<{
+      filePath: string
+      fileURL: string
+      originalBytes: number
+      processedBytes: number
+      totalChunks: number
+      wordCount: number
+      readingTimeMinutes: number
+      averageChunkSize: number
+    }>
   }
 }
 

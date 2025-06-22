@@ -40,22 +40,31 @@ import strip from "strip-markdown";
 /**
  * Convert file path to documentation URL
  */
-function filePathToURL(filePath: string, baseURL?: string, context?: LoadContext): string {
-  console.log(`🔗 Converting file path: ${filePath}`);
-  
+function filePathToURL(
+  filePath: string,
+  baseURL?: string,
+  context?: LoadContext
+): string {
+  console.log(`\n🔗 Converting file path: ${filePath}`);
+
   if (!baseURL) {
     console.log(`⚠️ No baseURL provided, returning original path: ${filePath}`);
     return filePath;
   }
 
   // Detect if we're in development mode
-  const isDevelopment = process.env.NODE_ENV === 'development' || 
-                       baseURL.includes('localhost') || 
-                       baseURL.includes('127.0.0.1') ||
-                       baseURL.includes(':3000') ||
-                       baseURL.includes(':4000');
+  const isDevelopment =
+    process.env.NODE_ENV === "development" ||
+    baseURL.includes("localhost") ||
+    baseURL.includes("127.0.0.1") ||
+    baseURL.includes(":3000") ||
+    baseURL.includes(":4000");
 
-  console.log(`🛠️ Environment detection: ${isDevelopment ? 'development' : 'production'} (baseURL: ${baseURL})`);
+  console.log(
+    `🛠️ Environment detection: ${
+      isDevelopment ? "development" : "production"
+    } (baseURL: ${baseURL})`
+  );
 
   // Remove .md extension and convert to URL path
   let urlPath = filePath.replace(/\.mdx?$/, "");
@@ -90,13 +99,14 @@ function filePathToURL(filePath: string, baseURL?: string, context?: LoadContext
 
   // Build the final URL based on environment
   let finalURL: string;
-  
+
   if (isDevelopment) {
     // For localhost development, use localhost:4000 (or current port)
-    const devBaseURL = baseURL.includes('localhost') || baseURL.includes('127.0.0.1') 
-      ? baseURL 
-      : 'http://localhost:4000';
-    
+    const devBaseURL =
+      baseURL.includes("localhost") || baseURL.includes("127.0.0.1")
+        ? baseURL
+        : "http://localhost:4000";
+
     const cleanBaseURL = devBaseURL.replace(/\/$/, "");
     finalURL = `${cleanBaseURL}/${urlPath}`;
   } else {
@@ -106,13 +116,15 @@ function filePathToURL(filePath: string, baseURL?: string, context?: LoadContext
   }
 
   console.log(`✅ Converted URL: ${filePath} -> ${finalURL}`);
-  console.log(`📋 Path breakdown: ${JSON.stringify({
-    original: filePath,
-    segments: pathSegments,
-    processed: processedSegments,
-    final: urlPath,
-    isDev: isDevelopment
-  })}`);
+  console.log(
+    `📋 Path breakdown: ${JSON.stringify({
+      original: filePath,
+      segments: pathSegments,
+      processed: processedSegments,
+      final: urlPath,
+      isDev: isDevelopment,
+    })}`
+  );
 
   return finalURL;
 }
@@ -398,7 +410,7 @@ export async function processDirectory(dir: string): Promise<FileNode[]> {
     // Process all root nodes
     await Promise.all(tree.map(processNode));
     console.log(
-      `\n✅ File processing complete! Processed ${processedFiles}/${totalFiles} files successfully.`
+      `\n✅ Directory processing complete! Processed ${processedFiles}/${totalFiles} files successfully.`
     );
 
     return tree;
@@ -469,14 +481,35 @@ async function generateEmbeddings(
   let processedChunks = 0;
 
   console.log(
-    `🔮 Generating embeddings for ${totalChunks} chunks in batches of ${batchSize}...`
+    `\n🔮 Generating embeddings for ${totalChunks} chunks using batch size of ${batchSize}`
   );
+  console.log(
+    `📊 Why batching? Each API call can process multiple chunks at once:`
+  );
+  console.log(
+    `   • Batch size ${batchSize} = ${batchSize} chunks per API request`
+  );
+  console.log(
+    `   • Total API calls needed: ${Math.ceil(totalChunks / batchSize)}`
+  );
+  console.log(`   • Reduces API overhead and improves speed`);
+  console.log(`   • Larger batches = fewer API calls but more memory usage`);
+  console.log(``);
 
   for (let i = 0; i < chunks.length; i += batchSize) {
     const batch = chunks.slice(i, i + batchSize);
     const texts = batch.map((chunk) => chunk.text);
 
     try {
+      const batchNumber = Math.floor(i / batchSize) + 1;
+      const totalBatches = Math.ceil(totalChunks / batchSize);
+
+      console.log(
+        `🔮 API Call ${batchNumber}/${totalBatches}: Processing ${
+          batch.length
+        } chunks (${batch.length * 1500} chars avg)`
+      );
+
       const embeddings = await aiService.generateEmbeddings(texts, { model });
 
       for (let j = 0; j < batch.length; j++) {
@@ -492,8 +525,12 @@ async function generateEmbeddings(
       const memoryUsage = Math.round(
         process.memoryUsage().heapUsed / 1024 / 1024
       );
+
+      console.log(
+        `✅ Batch ${batchNumber} complete: ${batch.length} embeddings generated`
+      );
       process.stdout.write(
-        `\rProgress: ${progress}% (${processedChunks}/${totalChunks} chunks) - Memory: ${memoryUsage}MB`
+        `📊 Overall Progress: ${progress}% (${processedChunks}/${totalChunks} chunks) - Memory: ${memoryUsage}MB\n`
       );
 
       // Clear temporary arrays to help with garbage collection
@@ -532,8 +569,6 @@ export async function loadContent(
 ): Promise<ChatPluginContent> {
   const { siteDir, options } = context;
 
-  console.log("\n🔥 USING UPDATED PLUGIN VERSION WITH CACHE FIX 🔥");
-
   const embeddingCache = {
     ...DEFAULT_EMBEDDING_CACHE_CONFIG,
     ...options?.embeddingCache,
@@ -554,10 +589,11 @@ export async function loadContent(
     );
   }
 
-  console.log("\n=== Starting content processing ===");
-  console.log(`[DEBUG] Cache strategy: ${embeddingCache.strategy}`);
-  console.log(`[DEBUG] Cache path: ${cacheFullPath}`);
-  console.log(`[DEBUG] Cache enabled: ${embeddingCache.enabled}`);
+  console.log("\n=== 🔥 Starting content processing 🔥 ===");
+  console.log(`[CACHE] Strategy: ${embeddingCache.strategy}`);
+  console.log(`[CACHE] Path: ${cacheFullPath}`);
+  console.log(`[CACHE] Enabled: ${embeddingCache.enabled}`);
+  console.log("");
 
   const docsDir = path.join(siteDir, "docs");
   const pagesDir = path.join(siteDir, "src/pages");
@@ -570,23 +606,21 @@ export async function loadContent(
 
   // Convert trees to flat lists and combine
   const allFiles = [...treeToFlatList(docsTree), ...treeToFlatList(pagesTree)];
-  console.log(`\n 📖 Found ${allFiles.length} total files to process`);
+  console.log(`\n📖 Found ${allFiles.length} total files to process`);
 
   // --- Embedding Cache Logic ---
   let cacheValid = false;
   let cacheData: ChatPluginContent | undefined = undefined;
-  console.log(`\n[DEBUG] Checking cache at: ${cacheFullPath}`);
+  console.log(`\n[CACHE] Checking cache: ${cacheFullPath}`);
   if (embeddingCache.enabled) {
     try {
-      console.log(`[DEBUG] Reading cache file...`);
+      console.log(`[CACHE] Reading cache file...`);
       const cacheRaw = await fs.readFile(cacheFullPath, "utf-8");
       const cacheJson = JSON.parse(cacheRaw);
       console.log(
-        `[DEBUG] Cache file read successfully. Strategy: ${embeddingCache.strategy}`
+        `[CACHE] File read successfully. Strategy: ${embeddingCache.strategy}`
       );
-      console.log(
-        `[DEBUG] Cache contains ${cacheJson.chunks?.length || 0} chunks`
-      );
+      console.log(`[CACHE] Contains ${cacheJson.chunks?.length || 0} chunks`);
 
       if (embeddingCache.strategy === "manual") {
         // Always use cache if present, never regenerate
@@ -605,7 +639,7 @@ export async function loadContent(
             "\n[Embedding Cache] MANUAL strategy: Cache file exists but has invalid format."
           );
           console.warn(
-            `[DEBUG] Cache validation failed: chunks=${!!cacheJson.chunks}, isArray=${Array.isArray(
+            `[CACHE] Validation failed: chunks=${!!cacheJson.chunks}, isArray=${Array.isArray(
               cacheJson.chunks
             )}, metadata=${!!cacheJson.metadata}`
           );
@@ -648,38 +682,85 @@ export async function loadContent(
 
   if (cacheValid && cacheData) {
     console.log(
-      `[DEBUG] Cache is valid, returning cached data with ${cacheData.chunks.length} chunks`
+      `[CACHE] Valid, returning cached data with ${cacheData.chunks.length} chunks`
     );
     return cacheData;
   }
   console.log(
-    `[DEBUG] Cache not valid (cacheValid=${cacheValid}, hasData=${!!cacheData}), proceeding with embedding generation`
+    `[CACHE] Not valid (cacheValid=${cacheValid}, hasData=${!!cacheData}), proceeding with embedding generation`
   );
   // --- End Embedding Cache Logic ---
 
   // Process each file into chunks with metadata
-  console.log("\n📖 Splitting content into chunks...");
+  console.log("\n📖 Splitting content into chunks...\n");
   let processedForChunking = 0;
   const totalForChunking = allFiles.length;
   const MAX_CHUNKS_PER_FILE = embeddingConfig.maxChunksPerFile;
   const allChunks = [];
 
+  // Track statistics for enhanced metadata
+  const fileStats = new Map<
+    string,
+    {
+      originalBytes: number;
+      processedBytes: number;
+      totalChunks: number;
+      wordCount: number;
+      readingTimeMinutes: number;
+      lastModified?: Date;
+      averageChunkSize: number;
+    }
+  >();
+
   // Process files sequentially instead of using flatMap
   for (const file of allFiles) {
-    const textChunks = splitIntoChunks(file.content, {
+    const fileContent = file.content;
+    const originalBytes = Buffer.byteLength(fileContent, "utf8");
+    const wordCount = fileContent
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
+    const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200)); // Average reading speed
+
+    const textChunks = splitIntoChunks(fileContent, {
       maxChunkSize: embeddingConfig.chunkSize,
       strategy: embeddingConfig.chunkingStrategy,
     });
+
     const limitedChunks =
       textChunks.length > MAX_CHUNKS_PER_FILE
         ? textChunks.slice(0, MAX_CHUNKS_PER_FILE)
         : textChunks;
 
-    // Add chunks for this file with metadata
+    // Calculate processed bytes (sum of all chunk text lengths)
+    const processedBytes = limitedChunks.reduce((sum, chunk) => {
+      const chunkText = typeof chunk === "string" ? chunk : chunk.text;
+      return sum + Buffer.byteLength(chunkText, "utf8");
+    }, 0);
+
+    const averageChunkSize =
+      limitedChunks.length > 0 ? processedBytes / limitedChunks.length : 0;
+
+    // Store file statistics
+    fileStats.set(file.filePath, {
+      originalBytes,
+      processedBytes,
+      totalChunks: limitedChunks.length,
+      wordCount,
+      readingTimeMinutes,
+      averageChunkSize: Math.round(averageChunkSize),
+    });
+
+    // Add chunks for this file with enhanced metadata
     for (let index = 0; index < limitedChunks.length; index++) {
       const chunk = limitedChunks[index];
+      const chunkText = typeof chunk === "string" ? chunk : chunk.text;
+      const chunkBytes = Buffer.byteLength(chunkText, "utf8");
+      const chunkWords = chunkText
+        .split(/\s+/)
+        .filter((word) => word.length > 0).length;
+
       allChunks.push({
-        text: typeof chunk === "string" ? chunk : chunk.text,
+        text: chunkText,
         metadata: {
           ...file.metadata,
           filePath: file.filePath,
@@ -687,6 +768,44 @@ export async function loadContent(
           title: file.metadata.title,
           section: typeof chunk === "object" ? chunk.section : undefined,
           position: index,
+
+          // 🔥 Enhanced file-level metadata
+          fileStats: {
+            fileSizeBytes: originalBytes,
+            fileSizeKB: Math.round((originalBytes / 1024) * 100) / 100,
+            totalChunksInFile: limitedChunks.length,
+            totalEmbeddingsInFile: limitedChunks.length, // Each chunk = 1 embedding
+            fileWordCount: wordCount,
+            estimatedReadingTimeMinutes: readingTimeMinutes,
+            averageChunkSizeBytes: Math.round(averageChunkSize),
+            compressionRatio: Math.round(
+              (processedBytes / originalBytes) * 100
+            ), // % of original content preserved
+          },
+
+          // 🔥 Enhanced chunk-level metadata
+          chunkStats: {
+            chunkIndex: index + 1, // 1-based indexing for humans
+            chunkSizeBytes: chunkBytes,
+            chunkSizeKB: Math.round((chunkBytes / 1024) * 100) / 100,
+            chunkWordCount: chunkWords,
+            chunkReadingTimeSeconds: Math.max(5, Math.ceil(chunkWords / 3.33)), // ~200 words/min = 3.33 words/sec
+            isLargeChunk: chunkBytes > embeddingConfig.chunkSize * 0.8, // >80% of max chunk size
+            chunkType:
+              typeof chunk === "object" && chunk.section
+                ? "section"
+                : "content",
+          },
+
+          // 🔥 Processing metadata
+          processingStats: {
+            processedAt: new Date().toISOString(),
+            chunkingStrategy: embeddingConfig.chunkingStrategy,
+            maxChunkSize: embeddingConfig.chunkSize,
+            embeddingModel: embeddingConfig.model,
+            wasTruncated: textChunks.length > limitedChunks.length,
+            originalChunkCount: textChunks.length,
+          },
         },
       });
     }
@@ -698,8 +817,15 @@ export async function loadContent(
     const memoryUsage = Math.round(
       process.memoryUsage().heapUsed / 1024 / 1024
     );
+
+    // Enhanced progress reporting
+    const fileSize = Math.round((originalBytes / 1024) * 100) / 100;
     process.stdout.write(
-      `\r 📖 Progress: ${progress}% (${processedForChunking}/${totalForChunking} files chunked) - Memory: ${memoryUsage}MB`
+      `\r📖 Progress: ${progress}% (${processedForChunking}/${totalForChunking} files) | ` +
+        `📄 ${file.filePath.split("/").pop()} (${fileSize}KB → ${
+          limitedChunks.length
+        } chunks) | ` +
+        `💾 Memory: ${memoryUsage}MB`
     );
 
     // Clear the temporary arrays to help with garbage collection
@@ -711,11 +837,79 @@ export async function loadContent(
     `\n📖 Content splitting complete! Generated ${allChunks.length} total chunks`
   );
 
-  // Generate embeddings for all chunks
-  console.log(`\n🔥 GENERATING EMBEDDINGS for ${allChunks.length} chunks`);
+  // 🔥 Calculate and display comprehensive statistics
+  const totalOriginalBytes = Array.from(fileStats.values()).reduce(
+    (sum, stats) => sum + stats.originalBytes,
+    0
+  );
+  const totalProcessedBytes = Array.from(fileStats.values()).reduce(
+    (sum, stats) => sum + stats.processedBytes,
+    0
+  );
+  const totalWords = Array.from(fileStats.values()).reduce(
+    (sum, stats) => sum + stats.wordCount,
+    0
+  );
+  const totalReadingTime = Array.from(fileStats.values()).reduce(
+    (sum, stats) => sum + stats.readingTimeMinutes,
+    0
+  );
+  const averageChunksPerFile = allChunks.length / allFiles.length;
+  const largestFile = Math.max(
+    ...Array.from(fileStats.values()).map((s) => s.originalBytes)
+  );
+  const smallestFile = Math.min(
+    ...Array.from(fileStats.values()).map((s) => s.originalBytes)
+  );
+
+  console.log(`\n🔥 COMPREHENSIVE PROCESSING STATISTICS:`);
+  console.log(`📁 Total Files: ${allFiles.length}`);
+  console.log(`📦 Total Chunks: ${allChunks.length}`);
   console.log(
-    `🔥 Sample chunk metadata:`,
-    JSON.stringify(allChunks[0]?.metadata, null, 2)
+    `📊 Average Chunks/File: ${Math.round(averageChunksPerFile * 100) / 100}`
+  );
+  console.log(
+    `📏 Total Content: ${Math.round(
+      totalOriginalBytes / 1024
+    )} KB (${totalWords.toLocaleString()} words)`
+  );
+  console.log(
+    `⚡ Processed Content: ${Math.round(totalProcessedBytes / 1024)} KB`
+  );
+  console.log(`📖 Total Reading Time: ${totalReadingTime} minutes`);
+  console.log(
+    `📈 File Size Range: ${Math.round((smallestFile / 1024) * 100) / 100}KB - ${
+      Math.round((largestFile / 1024) * 100) / 100
+    }KB`
+  );
+  console.log(
+    `🗜️ Compression Ratio: ${Math.round(
+      (totalProcessedBytes / totalOriginalBytes) * 100
+    )}%`
+  );
+
+  console.log(`\n🔥 SAMPLE ENHANCED METADATA:`);
+  const sampleMetadata = allChunks[0]?.metadata;
+  if (sampleMetadata) {
+    console.log(`📄 File: ${sampleMetadata.filePath}`);
+    console.log(`🔗 URL: ${sampleMetadata.fileURL}`);
+    console.log(
+      `📊 File Stats:`,
+      JSON.stringify(sampleMetadata.fileStats, null, 2)
+    );
+    console.log(
+      `📦 Chunk Stats:`,
+      JSON.stringify(sampleMetadata.chunkStats, null, 2)
+    );
+    console.log(
+      `⚙️ Processing Stats:`,
+      JSON.stringify(sampleMetadata.processingStats, null, 2)
+    );
+  }
+
+  // Generate embeddings for all chunks
+  console.log(
+    `\n🔥 About to start generating embeddings for ${allChunks.length} chunks`
   );
 
   const chunksWithEmbeddings = await generateEmbeddings(
@@ -758,6 +952,44 @@ export async function loadContent(
       totalChunks: chunksWithEmbeddings.length,
       lastUpdated: new Date().toISOString(),
       ...(contentHash ? { contentHash } : {}),
+
+      // 🔥 Enhanced global statistics
+      globalStats: {
+        totalFiles: allFiles.length,
+        totalOriginalBytes: totalOriginalBytes,
+        totalOriginalKB: Math.round((totalOriginalBytes / 1024) * 100) / 100,
+        totalProcessedBytes: totalProcessedBytes,
+        totalProcessedKB: Math.round((totalProcessedBytes / 1024) * 100) / 100,
+        totalWords: totalWords,
+        totalReadingTimeMinutes: totalReadingTime,
+        averageChunksPerFile: Math.round(averageChunksPerFile * 100) / 100,
+        compressionRatio: Math.round(
+          (totalProcessedBytes / totalOriginalBytes) * 100
+        ),
+        largestFileBytes: largestFile,
+        smallestFileBytes: smallestFile,
+        processingTimeSeconds: Math.round(
+          (Date.now() - Date.parse(new Date().toISOString())) / 1000
+        ),
+        embeddingModel: embeddingConfig.model,
+        chunkingStrategy: embeddingConfig.chunkingStrategy,
+        maxChunkSize: embeddingConfig.chunkSize,
+        actualMaxChunkSize: Math.max(
+          ...chunksWithEmbeddings.map((c) => Buffer.byteLength(c.text, "utf8"))
+        ),
+        actualMinChunkSize: Math.min(
+          ...chunksWithEmbeddings.map((c) => Buffer.byteLength(c.text, "utf8"))
+        ),
+      },
+
+      // 🔥 Per-file breakdown for advanced analytics
+      fileBreakdown: Array.from(fileStats.entries()).map(
+        ([filePath, stats]) => ({
+          filePath,
+          fileURL: filePathToURL(filePath, baseURL, context),
+          ...stats,
+        })
+      ),
     },
   };
 
@@ -795,10 +1027,11 @@ export async function loadContent(
     }
   }
 
-  console.log("\n=== Content processing complete! ===");
-  console.log(`Total files processed: ${allFiles.length}`);
-  console.log(`Total chunks generated: ${allChunks.length}`);
-  console.log(`Total embeddings created: ${chunksWithEmbeddings.length}`);
+  console.log("\n=== 🔥Content processing complete 🔥 ===");
+  console.log(`🔍 Total files processed: ${allFiles.length}`);
+  console.log(`🔍 Total chunks generated: ${allChunks.length}`);
+  console.log(`🔍 Total embeddings created: ${chunksWithEmbeddings.length}`);
+  console.log("\n=== 🔥Content processing complete 🔥 ===");
 
   return result;
 }

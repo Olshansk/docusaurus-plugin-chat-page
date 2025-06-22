@@ -9,7 +9,7 @@ export const DEFAULT_EMBEDDING_CONFIG: Required<EmbeddingConfig> = {
   model: "text-embedding-3-small",
   chunkSize: 1500,
   chunkOverlap: 0,
-  batchSize: 10,
+  batchSize: 20, // How many chunks to send to OpenAI API per request (1-100) - Higher default for better performance
   maxChunksPerFile: 10,
   chunkingStrategy: "headers",
   relevantChunks: 3,

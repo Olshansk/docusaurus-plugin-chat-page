@@ -93,7 +93,27 @@ export function useAIChat(chunks: DocumentChunkWithEmbedding[], config: AIConfig
       const contextText = relevantChunks
         .map((chunk) => {
           console.log(`[DEBUG] Chunk metadata:`, chunk.metadata);
-          return `${chunk.text}\nSource: ${chunk.metadata.fileURL || chunk.metadata.filePath}`;
+          
+          // 🔥 Enhanced context with file statistics
+          const fileStats = chunk.metadata.fileStats;
+          const chunkStats = chunk.metadata.chunkStats;
+          
+          let contextInfo = `${chunk.text}\n\nSource: ${chunk.metadata.fileURL || chunk.metadata.filePath}`;
+          
+          // Add file statistics if available
+          if (fileStats) {
+            contextInfo += `\n📊 File Info: ${fileStats.fileSizeKB}KB, ${fileStats.totalChunksInFile} chunks, ~${fileStats.estimatedReadingTimeMinutes}min read`;
+          }
+          
+          // Add chunk-specific info if available  
+          if (chunkStats) {
+            contextInfo += `\n📦 Section: ${chunkStats.chunkIndex}/${fileStats?.totalChunksInFile || '?'} (${chunkStats.chunkSizeKB}KB)`;
+            if (chunk.metadata.section) {
+              contextInfo += ` - "${chunk.metadata.section}"`;
+            }
+          }
+          
+          return contextInfo;
         })
         .join("\n\n");
 
