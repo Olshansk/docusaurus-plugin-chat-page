@@ -10,6 +10,7 @@ import OpenAI from "openai"
 import process from "process"
 import { createAIService } from "./services/ai"
 import { DEFAULT_EMBEDDING_CONFIG, DEFAULT_EMBEDDING_CACHE_CONFIG, FILE_PATTERNS, CHAT_DEFAULTS } from "./constants"
+import { handleFileSystemError, handleValidationError, withRetry, logError, DocusaurusPluginError, ErrorType, createError } from "./utils/errors"
 
 /**
  * Convert file path to documentation URL
@@ -226,16 +227,45 @@ async function processMarkdown(content: string): Promise<{
   plainText: string
   frontmatter: Record<string, any>
 }> {
-  // Extract frontmatter using gray-matter
-  const { data: frontmatter, content: markdownContent } = matter(content)
+  try {
+    if (!content || typeof content !== 'string') {
+      throw createError(
+        ErrorType.VALIDATION,
+        "Invalid markdown content: content must be a non-empty string",
+        "File contains invalid content",
+        { emoji: "📄❌" }
+      );
+    }
 
-  // Convert markdown to plain text
-  const file = await remark().use(strip).process(markdownContent)
-  const plainText = String(file)
+    // Extract frontmatter using gray-matter
+    const { data: frontmatter, content: markdownContent } = matter(content)
 
-  return {
-    plainText: plainText.trim(),
-    frontmatter,
+    // Convert markdown to plain text
+    const file = await remark().use(strip).process(markdownContent)
+    const plainText = String(file)
+
+    if (!plainText.trim()) {
+      console.warn("⚠️ Processed markdown resulted in empty content");
+    }
+
+    return {
+      plainText: plainText.trim(),
+      frontmatter,
+    }
+  } catch (error) {
+    if (error instanceof DocusaurusPluginError) {
+      throw error;
+    }
+    
+    throw createError(
+      ErrorType.PARSING,
+      `Failed to process markdown: ${error.message}`,
+      "Unable to process markdown content",
+      { 
+        emoji: "📝❌",
+        details: error
+      }
+    );
   }
 }
 
@@ -243,13 +273,23 @@ async function processMarkdown(content: string): Promise<{
  * Process a directory and build a tree structure
  */
 export async function processDirectory(dir: string): Promise<FileNode[]> {
+  console.log(`📁 Processing directory: ${dir}`);
+  
   try {
+    // Check if directory exists
+    try {
+      await fs.access(dir);
+    } catch (error) {
+      console.warn(`⚠️ Directory ${dir} does not exist, skipping...`);
+      return [];
+    }
+
     const files = glob.sync(FILE_PATTERNS.MARKDOWN, {
       cwd: dir,
       absolute: false,
     })
 
-    console.log(`\nProcessing ${files.length} markdown files from ${dir}...`)
+    console.log(`📄 Processing ${files.length} markdown files from ${dir}...`)
 
     const tree = pathsToTree(files, dir)
     let processedFiles = 0
@@ -258,8 +298,12 @@ export async function processDirectory(dir: string): Promise<FileNode[]> {
     // Process each file node
     const processNode = async (node: FileNode): Promise<void> => {
       if (node.type === "file") {
+        const filePath = path.join(dir, node.path);
         try {
-          const content = await fs.readFile(path.join(dir, node.path), "utf-8")
+          const content = await withRetry(async () => {
+            return fs.readFile(filePath, "utf-8");
+          }, 2, 500);
+          
           const { plainText, frontmatter } = await processMarkdown(content)
           node.content = {
             metadata: frontmatter,
@@ -268,10 +312,12 @@ export async function processDirectory(dir: string): Promise<FileNode[]> {
           processedFiles++
           const progress = Math.round((processedFiles / totalFiles) * 100)
           process.stdout.write(
-            `\rProgress: ${progress}% (${processedFiles}/${totalFiles} files)`
+            `\r✅ Progress: ${progress}% (${processedFiles}/${totalFiles} files)`
           )
         } catch (error) {
-          console.error(`\nError processing file ${node.path}:`, error)
+          const pluginError = handleFileSystemError(error, node.path);
+          console.error(`\n${pluginError.emoji} Error processing file ${node.path}:`, pluginError.message);
+          // Continue processing other files rather than failing completely
         }
       }
 
@@ -283,12 +329,13 @@ export async function processDirectory(dir: string): Promise<FileNode[]> {
 
     // Process all root nodes
     await Promise.all(tree.map(processNode))
-    console.log("\nFile processing complete!")
+    console.log(`\n✅ File processing complete! Processed ${processedFiles}/${totalFiles} files successfully.`)
 
     return tree
   } catch (error) {
-    console.error("Error in processDirectory:", error)
-    throw error
+    const pluginError = handleFileSystemError(error, dir);
+    logError(pluginError, "processDirectory");
+    throw pluginError;
   }
 }
 
@@ -330,6 +377,15 @@ async function generateEmbeddings(
   openAIConfig: OpenAIConfig,
   embeddingConfig: EmbeddingConfig = {}
 ) {
+  if (!chunks.length) {
+    console.warn("⚠️ No chunks provided for embedding generation");
+    return [];
+  }
+
+  if (!openAIConfig?.apiKey) {
+    throw handleValidationError("openAIConfig.apiKey", openAIConfig?.apiKey, "is required");
+  }
+
   const batchSize = embeddingConfig.batchSize || DEFAULT_EMBEDDING_CONFIG.batchSize
   const model = embeddingConfig.model || DEFAULT_EMBEDDING_CONFIG.model
   const aiService = createAIService(openAIConfig)
@@ -338,7 +394,7 @@ async function generateEmbeddings(
   let processedChunks = 0
 
   console.log(
-    `\nGenerating embeddings for ${totalChunks} chunks in batches of ${batchSize}...`
+    `🔮 Generating embeddings for ${totalChunks} chunks in batches of ${batchSize}...`
   )
 
   for (let i = 0; i < chunks.length; i += batchSize) {
@@ -372,12 +428,13 @@ async function generateEmbeddings(
       // Add a small delay between batches
       await new Promise((resolve) => setTimeout(resolve, CHAT_DEFAULTS.PROGRESS_UPDATE_DELAY))
     } catch (error) {
-      console.error(`\nError processing batch starting at chunk ${i}:`, error)
-      throw error
+      console.error(`\n🔥❌ Error processing batch starting at chunk ${i}:`, error)
+      // Don't throw immediately - let the AI service error handling take care of retries
+      throw error;
     }
   }
 
-  console.log("\nEmbeddings generation complete!")
+  console.log(`\n✅ Embeddings generation complete! Generated ${results.length} embeddings.`)
   return results
 }
 
@@ -400,9 +457,11 @@ export async function loadContent(
   const cacheFullPath = path.join(siteDir, ".docusaurus", cachePath)
 
   if (!options?.openai?.apiKey) {
-    throw new Error(
-      "OpenAI API key is required. Please add it to your docusaurus.config.js"
-    )
+    throw handleValidationError(
+      "openai.apiKey", 
+      options?.openai?.apiKey, 
+      "is required. Please add it to your docusaurus.config.js"
+    );
   }
 
   console.log("\n=== Starting content processing ===")
@@ -462,11 +521,17 @@ export async function loadContent(
         cacheValid = false
       }
     } catch (e) {
-      console.log(`[DEBUG] Cache read failed: ${e.message}`)
+      console.log(`📋❌ Cache read failed: ${e.message}`)
       if (embeddingCache.strategy === "manual") {
-        throw new Error(
-          `[Embedding Cache] MANUAL strategy: Cache file not found at ${cacheFullPath}. Please generate embeddings manually.`
-        )
+        throw createError(
+          ErrorType.FILE_SYSTEM,
+          `Cache file not found at ${cacheFullPath}`,
+          "Manual embedding cache strategy requires a valid cache file. Please generate embeddings manually.",
+          { 
+            emoji: "📋❌",
+            retryable: false
+          }
+        );
       }
       // Cache file does not exist or is invalid for other strategies
       cacheValid = false
@@ -579,7 +644,9 @@ export async function loadContent(
       console.log(`🔥 Cache file size: ${JSON.stringify(result).length} characters`)
       console.log(`🔥 First chunk in cache has fileURL:`, !!result.chunks[0]?.metadata?.fileURL)
     } catch (e) {
-      console.warn("[Embedding Cache] Failed to write cache:", e)
+      const cacheError = handleFileSystemError(e, cacheFullPath);
+      console.warn(`${cacheError.emoji} Failed to write embedding cache:`, cacheError.message);
+      // Don't throw - cache write failure shouldn't break the build
     }
   }
 

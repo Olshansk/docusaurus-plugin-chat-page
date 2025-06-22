@@ -325,3 +325,150 @@
   background: var(--ifm-color-danger-contrast-background);
   border-radius: 4px;
 }
+
+/* Error Boundary Styles */
+.errorBoundary {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.errorIcon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: shake 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0px); }
+  100% { transform: translateX(4px); }
+}
+
+.errorBoundary h3 {
+  color: white;
+  margin: 1rem 0;
+  font-size: 1.5rem;
+}
+
+.errorBoundary .errorMessage {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  font-size: 1.1rem;
+}
+
+.errorDetails {
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.errorDetails summary {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.errorDetails summary:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.errorStack {
+  background: rgba(0, 0, 0, 0.3);
+  color: #f0f0f0;
+  padding: 1rem;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.errorActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.retryButton, .reloadButton {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.retryButton:hover, .reloadButton:hover {
+  background: white;
+  color: #ee5a24;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.errorTips {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.errorTips h4 {
+  color: white;
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+}
+
+.errorTips ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.errorTips li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.95rem;
+}
+
+.errorTips li:last-child {
+  border-bottom: none;
+}
+
+/* Enhanced error states */
+.chatInputError {
+  border: 2px solid #ff6b6b !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+}
+
+.networkError {
+  background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%);
+}
+
+.authError {
+  background: linear-gradient(135deg, #8e24aa 0%, #d81b60 100%);
+}
+
+.rateLimitError {
+  background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+}

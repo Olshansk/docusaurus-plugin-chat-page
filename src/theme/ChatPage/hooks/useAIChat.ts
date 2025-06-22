@@ -5,6 +5,7 @@ import type { ChatCompletionOptions } from "../../../services/ai";
 import { cosineSimilarity } from "../../../utils/vector";
 import { createAIService } from "../../../services/ai";
 import { DEFAULT_EMBEDDING_CONFIG, DEFAULT_PROMPT_CONFIG } from "../../../constants";
+import { handleValidationError, DocusaurusPluginError, logError } from "../../../utils/errors";
 import type { Message } from "../components/ChatMessage";
 
 interface AIConfig {
@@ -23,22 +24,58 @@ interface AIConfig {
 }
 
 export function useAIChat(chunks: DocumentChunkWithEmbedding[], config: AIConfig) {
+  if (!chunks?.length) {
+    console.warn("⚠️ No document chunks provided to useAIChat");
+  }
+
+  if (!config?.openai?.apiKey) {
+    throw handleValidationError("config.openai.apiKey", config?.openai?.apiKey, "is required");
+  }
+
   const aiService = createAIService(config.openai);
 
   const findRelevantChunks = useCallback(async (query: string, topK: number = DEFAULT_EMBEDDING_CONFIG.relevantChunks) => {
+    console.log(`🔍 Finding relevant chunks for query: "${query.slice(0, 50)}${query.length > 50 ? '...' : ''}" (top ${topK})`);
+    
     try {
-      const [queryEmbedding] = await aiService.generateEmbeddings([query]);
-      const similarities = chunks.map((chunk) => ({
-        chunk,
-        similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
-      }));
+      if (!query?.trim()) {
+        throw handleValidationError("query", query, "cannot be empty");
+      }
 
-      return similarities
-        .sort((a, b) => b.similarity - a.similarity)
+      if (!chunks?.length) {
+        console.warn("⚠️ No chunks available for similarity search");
+        return [];
+      }
+
+      const [queryEmbedding] = await aiService.generateEmbeddings([query]);
+      
+      if (!queryEmbedding?.length) {
+        console.error("❌ Failed to generate query embedding");
+        throw new Error("No embedding generated for query");
+      }
+
+      const similarities = chunks.map((chunk) => {
+        try {
+          return {
+            chunk,
+            similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
+          };
+        } catch (simError) {
+          console.warn(`⚠️ Skipping chunk due to similarity calculation error:`, simError);
+          return null;
+        }
+      }).filter(Boolean);
+
+      const relevantChunks = similarities
+        .sort((a, b) => b!.similarity - a!.similarity)
         .slice(0, topK)
-        .map((item) => item.chunk);
+        .map((item) => item!.chunk);
+
+      console.log(`✅ Found ${relevantChunks.length} relevant chunks (avg similarity: ${similarities.slice(0, topK).reduce((sum, item) => sum + item!.similarity, 0) / Math.min(topK, similarities.length)})`);
+      
+      return relevantChunks;
     } catch (error) {
-      console.error("Error getting embeddings:", error);
+      logError(error as Error, "findRelevantChunks");
       throw error;
     }
   }, [chunks, aiService]);

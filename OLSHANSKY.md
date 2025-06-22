@@ -24,6 +24,17 @@ git commit -m "Build plugin for GitHub install"
 
 ## Things I want to do
 
+## Short-term
+
+- Cleanup the code
+- Improve the prompt
+- Deploy to Vercel
+- Improve the README
+- Inspect how we're actually buildin / splitting the embeddings
+
+
+### In the future
+
 - [ ] Support for things other than needing an OpenAI key
   - [ ] OpenRouter API Keys
   - [ ] Claude
