@@ -1,4 +1,4 @@
-# Docusaurus Plugin Chat Page
+# Docusaurus Plugin Chat Page <!-- omit in toc -->
 
 **AI-powered documentation assistant for your Docusaurus site** 🤖
 
@@ -11,6 +11,51 @@ Transform your static documentation into an interactive experience. Users can as
 > [Placeholder for gift/special offer details - to be added]
 
 ---
+
+> [!NOTE]
+> This repo was originally forked from [nichnarmada/docusaurus-plugin-chat-page](https://github.com/nichnarmada/docusaurus-plugin-chat-page) but has since undergone significant changes and improvements.
+
+## ToC <!-- omit in toc -->
+
+- [🚀 Quick Start](#-quick-start)
+  - [1. Install](#1-install)
+  - [2. Configure](#2-configure)
+  - [3. Set API Key](#3-set-api-key)
+  - [4. Build \& Run](#4-build--run)
+- [⚡ Why Use This Plugin?](#-why-use-this-plugin)
+- [📋 Configuration Options](#-configuration-options)
+  - [Basic Configuration](#basic-configuration)
+  - [OpenAI Models \& Settings](#openai-models--settings)
+  - [Embedding Configuration](#embedding-configuration)
+  - [Caching Options](#caching-options)
+- [🛠️ Complete Configuration Example](#️-complete-configuration-example)
+- [🔗 Add to Navigation](#-add-to-navigation)
+- [🎯 How It Works](#-how-it-works)
+  - [Build Time](#build-time)
+  - [Runtime](#runtime)
+- [💡 Performance Tips](#-performance-tips)
+  - [For Development](#for-development)
+  - [For CI/CD](#for-cicd)
+- [🔧 Advanced Features](#-advanced-features)
+  - [URL Link Generation](#url-link-generation)
+  - [Custom System Prompts](#custom-system-prompts)
+  - [Advanced Chunking](#advanced-chunking)
+- [📊 Model Comparison](#-model-comparison)
+- [🛡️ Security \& Privacy](#️-security--privacy)
+- [📋 Requirements](#-requirements)
+- [🚨 Troubleshooting](#-troubleshooting)
+- [🚀 Deployment](#-deployment)
+  - [Deploying to Vercel](#deploying-to-vercel)
+    - [1. Vercel Configuration](#1-vercel-configuration)
+    - [2. Environment Variables](#2-environment-variables)
+    - [3. Deployment Steps](#3-deployment-steps)
+    - [4. Build Process](#4-build-process)
+    - [5. Important Notes](#5-important-notes)
+    - [6. Other Platforms](#6-other-platforms)
+- [🤝 Contributing](#-contributing)
+  - [Development Setup](#development-setup)
+- [📄 License](#-license)
+- [💬 Support](#-support)
 
 ## 🚀 Quick Start
 
@@ -98,14 +143,14 @@ Visit `/chat` on your site - that's it! 🎉
 
 ### Embedding Configuration
 
-| Option                       | Type     | Default                    | Description                   |
-| ---------------------------- | -------- | -------------------------- | ----------------------------- |
-| `embedding.model`            | `string` | `"text-embedding-3-small"` | Embedding model               |
-| `embedding.chunkSize`        | `number` | `1500`                     | Max characters per chunk      |
-| `embedding.chunkingStrategy` | `string` | `"headers"`                | `"headers"` or `"paragraphs"` |
+| Option                       | Type     | Default                    | Description                        |
+| ---------------------------- | -------- | -------------------------- | ---------------------------------- |
+| `embedding.model`            | `string` | `"text-embedding-3-small"` | Embedding model                    |
+| `embedding.chunkSize`        | `number` | `1500`                     | Max characters per chunk           |
+| `embedding.chunkingStrategy` | `string` | `"headers"`                | `"headers"` or `"paragraphs"`      |
 | `embedding.batchSize`        | `number` | `20`                       | Chunks per OpenAI API call (1-100) |
-| `embedding.maxChunksPerFile` | `number` | `10`                       | Max chunks per file           |
-| `embedding.relevantChunks`   | `number` | `3`                        | Chunks included in responses  |
+| `embedding.maxChunksPerFile` | `number` | `10`                       | Max chunks per file                |
+| `embedding.relevantChunks`   | `number` | `3`                        | Chunks included in responses       |
 
 ### Caching Options
 
@@ -283,26 +328,28 @@ embedding: {
 <summary>🚀 Batch Size Optimization</summary>
 
 **What is batch size?**
+
 - Number of text chunks sent to OpenAI API in a single request
 - OpenAI allows up to 100 inputs per embedding API call
 - Larger batches = fewer API calls = faster processing
 
 **Batch size recommendations:**
 
-| Documentation Size | Recommended Batch Size | Why |
-|-------------------|----------------------|-----|
-| **Small** (< 50 chunks) | `batchSize: 5` | Conservative, good for testing |
-| **Medium** (50-200 chunks) | `batchSize: 10` | Balanced speed and reliability |
-| **Large** (200+ chunks) | `batchSize: 20` | Faster processing, fewer API calls (default) |
-| **Very Large** (500+ chunks) | `batchSize: 50` | Maximum speed, requires stable connection |
+| Documentation Size           | Recommended Batch Size | Why                                          |
+| ---------------------------- | ---------------------- | -------------------------------------------- |
+| **Small** (< 50 chunks)      | `batchSize: 5`         | Conservative, good for testing               |
+| **Medium** (50-200 chunks)   | `batchSize: 10`        | Balanced speed and reliability               |
+| **Large** (200+ chunks)      | `batchSize: 20`        | Faster processing, fewer API calls (default) |
+| **Very Large** (500+ chunks) | `batchSize: 50`        | Maximum speed, requires stable connection    |
 
 **Example batch processing:**
+
 ```
 📊 100 chunks with batchSize: 10
    • API calls needed: 10 (100 ÷ 10)
    • Processing: 10 chunks per call
-   
-📊 100 chunks with batchSize: 25  
+
+📊 100 chunks with batchSize: 25
    • API calls needed: 4 (100 ÷ 25)
    • Processing: 25 chunks per call (75% faster!)
 ```
@@ -360,11 +407,11 @@ To deploy a Docusaurus site using this plugin to Vercel:
 
 #### 1. Vercel Configuration
 
-| Setting | Value |
-|---------|-------|
-| **Build Command** | `yarn build` |
-| **Output Directory** | `build` |
-| **Install Command** | `yarn install` |
+| Setting              | Value          |
+| -------------------- | -------------- |
+| **Build Command**    | `yarn build`   |
+| **Output Directory** | `build`        |
+| **Install Command**  | `yarn install` |
 
 #### 2. Environment Variables
 
@@ -405,12 +452,12 @@ yarn build                     # Build static site with embeddings
 
 This plugin works with any static hosting platform:
 
-| Platform | Build Command | Output Directory |
-|----------|--------------|------------------|
-| **Vercel** | `yarn build` | `build` |
-| **Netlify** | `yarn build` | `build` |
-| **GitHub Pages** | `yarn build` | `build` |
-| **AWS S3** | `yarn build` | `build` |
+| Platform         | Build Command | Output Directory |
+| ---------------- | ------------- | ---------------- |
+| **Vercel**       | `yarn build`  | `build`          |
+| **Netlify**      | `yarn build`  | `build`          |
+| **GitHub Pages** | `yarn build`  | `build`          |
+| **AWS S3**       | `yarn build`  | `build`          |
 
 ---
 
