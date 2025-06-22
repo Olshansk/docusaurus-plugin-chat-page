@@ -8,6 +8,7 @@ import { LoadContext, Plugin } from "@docusaurus/types";
 import type { EmbeddingCacheConfig } from "./types";
 import { loadContent } from "./content";
 import { normalizeUrl } from "@docusaurus/utils";
+import { DEFAULT_PLUGIN_OPTIONS, FILE_PATTERNS } from "./constants";
 
 export interface PluginOptions {
   label?: string;
@@ -29,8 +30,8 @@ export default function pluginChatPage(
 
   // Default options
   const {
-    label = "Chat",
-    path: inputPath = "chat",
+    label = DEFAULT_PLUGIN_OPTIONS.label,
+    path: inputPath = DEFAULT_PLUGIN_OPTIONS.path,
     baseURL,
     openai,
     embeddingCache,
@@ -53,10 +54,7 @@ export default function pluginChatPage(
     },
 
     getPathsToWatch() {
-      return [
-        path.join("src", "theme", "**", "*.{ts,tsx}"),
-        path.join("src", "utils", "**", "*.{ts,tsx}"),
-      ];
+      return FILE_PATTERNS.THEME_PATHS.map(pattern => path.join(pattern));
     },
 
     getClientModules() {

@@ -9,6 +9,7 @@ import strip from "strip-markdown"
 import OpenAI from "openai"
 import process from "process"
 import { createAIService } from "./services/ai"
+import { DEFAULT_EMBEDDING_CONFIG, DEFAULT_EMBEDDING_CACHE_CONFIG, FILE_PATTERNS, CHAT_DEFAULTS } from "./constants"
 
 /**
  * Convert file path to documentation URL
@@ -173,7 +174,7 @@ function splitIntoChunks(
     strategy?: "headers" | "paragraphs"
   } = {}
 ): Array<{text: string, section?: string}> {
-  const { maxChunkSize = 1500, strategy = "headers" } = options
+  const { maxChunkSize = DEFAULT_EMBEDDING_CONFIG.chunkSize, strategy = DEFAULT_EMBEDDING_CONFIG.chunkingStrategy } = options
 
   if (strategy === "headers") {
     return splitByHeaders(text, maxChunkSize)
@@ -243,7 +244,7 @@ async function processMarkdown(content: string): Promise<{
  */
 export async function processDirectory(dir: string): Promise<FileNode[]> {
   try {
-    const files = glob.sync("**/*.{md,mdx}", {
+    const files = glob.sync(FILE_PATTERNS.MARKDOWN, {
       cwd: dir,
       absolute: false,
     })
@@ -329,8 +330,8 @@ async function generateEmbeddings(
   openAIConfig: OpenAIConfig,
   embeddingConfig: EmbeddingConfig = {}
 ) {
-  const batchSize = embeddingConfig.batchSize || 10
-  const model = embeddingConfig.model || "text-embedding-3-small"
+  const batchSize = embeddingConfig.batchSize || DEFAULT_EMBEDDING_CONFIG.batchSize
+  const model = embeddingConfig.model || DEFAULT_EMBEDDING_CONFIG.model
   const aiService = createAIService(openAIConfig)
   const results = []
   const totalChunks = chunks.length
@@ -369,7 +370,7 @@ async function generateEmbeddings(
       texts.length = 0
 
       // Add a small delay between batches
-      await new Promise((resolve) => setTimeout(resolve, 50))
+      await new Promise((resolve) => setTimeout(resolve, CHAT_DEFAULTS.PROGRESS_UPDATE_DELAY))
     } catch (error) {
       console.error(`\nError processing batch starting at chunk ${i}:`, error)
       throw error
@@ -392,8 +393,8 @@ export async function loadContent(
   
   console.log("\n🔥 USING UPDATED PLUGIN VERSION WITH CACHE FIX 🔥")
   
-  const embeddingCache = options?.embeddingCache || { enabled: true, strategy: "hash", path: "embeddings.json" }
-  const embeddingConfig = options?.embedding || {}
+  const embeddingCache = { ...DEFAULT_EMBEDDING_CACHE_CONFIG, ...options?.embeddingCache }
+  const embeddingConfig = { ...DEFAULT_EMBEDDING_CONFIG, ...options?.embedding }
   const baseURL = options?.baseURL
   const cachePath = embeddingCache.path || "embeddings.json"
   const cacheFullPath = path.join(siteDir, ".docusaurus", cachePath)
@@ -483,14 +484,14 @@ export async function loadContent(
   console.log("\nSplitting content into chunks...")
   let processedForChunking = 0
   const totalForChunking = allFiles.length
-  const MAX_CHUNKS_PER_FILE = embeddingConfig.maxChunksPerFile || 10
+  const MAX_CHUNKS_PER_FILE = embeddingConfig.maxChunksPerFile
   const allChunks = [];
 
   // Process files sequentially instead of using flatMap
   for (const file of allFiles) {
     const textChunks = splitIntoChunks(file.content, {
-      maxChunkSize: embeddingConfig.chunkSize || 1500,
-      strategy: embeddingConfig.chunkingStrategy || "headers"
+      maxChunkSize: embeddingConfig.chunkSize,
+      strategy: embeddingConfig.chunkingStrategy
     })
     const limitedChunks =
       textChunks.length > MAX_CHUNKS_PER_FILE
