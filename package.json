@@ -8,7 +8,8 @@
     "build": "tsc && npm run copy-css",
     "watch": "tsc --watch",
     "clean": "rm -rf lib",
-    "copy-css": "cp src/theme/ChatPage/styles.module.css lib/theme/ChatPage/"
+    "copy-css": "cp src/theme/ChatPage/styles.module.css lib/theme/ChatPage/",
+    "prepare": "yarn build"
   },
   "files": [
     "lib",
