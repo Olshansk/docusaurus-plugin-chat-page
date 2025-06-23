@@ -17,7 +17,9 @@
   ],
   "dependencies": {
     "@docusaurus/utils": "^3.7.0",
+    "@types/glob": "^8.1.0",
     "execa": "^9.6.0",
+    "glob": "^11.0.3",
     "gray-matter": "^4.0.3",
     "openai": "^4.85.2",
     "react-markdown": "^10.0.0",
