@@ -290,13 +290,13 @@ Configure `baseURL` to generate clickable documentation links:
 | File Path                                | Generated URL                                              |
 | ---------------------------------------- | ---------------------------------------------------------- |
 | `docs/setup/installation.md`             | `https://docs.example.com/setup/installation`              |
-| `1_operate/3_configs/supplier_config.md` | `https://docs.example.com/operate/configs/supplier_config` |
+| `1_operate/3_configs/supplier_config.md` | `https://docs.example.com/operate/configs/supplier-config` |
 
 **Automatic transformations:**
 
 - ✅ Removes `.md`/`.mdx` extensions
 - ✅ Strips numeric prefixes (`1_operate` → `operate`)
-- ✅ Converts underscores to hyphens in directories
+- ✅ Converts underscores to hyphens everywhere (`supplier_config` → `supplier-config`)
 - ✅ Environment-aware (localhost vs production)
 
 ### Custom System Prompts
