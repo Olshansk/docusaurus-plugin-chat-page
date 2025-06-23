@@ -91,10 +91,18 @@ export default function pluginChatPage(
       const cachePath = embeddingCache?.path || "embeddings.json";
       const cacheFullPath = path.join(context.siteDir, cachePath);
       
+      console.log(`\n📖 ATTEMPTING TO READ CACHE FROM: ${cacheFullPath}`);
+      console.log(`📖 Cache mode: ${embeddingCache?.mode}`);
+      
       let embeddingsData;
       try {
+        console.log(`📖 Reading cache file...`);
         const cacheRaw = await fs.readFile(cacheFullPath, "utf-8");
         const cacheJson = JSON.parse(cacheRaw);
+        
+        console.log(`✅ CACHE READ SUCCESSFULLY FROM: ${cacheFullPath}`);
+        console.log(`✅ Cache contains ${cacheJson.chunks?.length || 0} chunks`);
+        
         embeddingsData = JSON.stringify({
           ...cacheJson,
           config: {
@@ -105,13 +113,11 @@ export default function pluginChatPage(
           },
         });
       } catch (error) {
-        if (embeddingCache?.strategy === "manual") {
-          throw new Error(
-            `Manual embedding cache strategy requires embeddings file at ${cacheFullPath}. ` +
-            `File not found or invalid. Please generate embeddings first.`
-          );
-        }
-        // For other strategies, fall back to the content from loadContent
+        console.error(`❌ FAILED TO READ CACHE FROM: ${cacheFullPath}`);
+        console.error(`❌ Error: ${error.message}`);
+        
+        console.log(`⚠️ Falling back to content from loadContent`);
+        // Always fall back to the content from loadContent since cache is generated there
         embeddingsData = JSON.stringify({
           ...content,
           config: {

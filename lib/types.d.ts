@@ -103,9 +103,9 @@ export interface ChatPluginContent {
 export interface OpenAIConfig {
     apiKey: string;
 }
+export type EmbeddingCacheMode = "auto" | "use" | "skip";
 export interface EmbeddingCacheConfig {
-    enabled?: boolean;
-    strategy?: "hash" | "timestamp" | "manual";
+    mode?: EmbeddingCacheMode;
     path?: string;
 }
 export interface PromptConfig {

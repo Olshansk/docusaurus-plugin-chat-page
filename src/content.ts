@@ -593,9 +593,8 @@ export async function loadContent(
   }
 
   console.log("\n=== 🔥 Starting content processing 🔥 ===");
-  console.log(`[CACHE] Strategy: ${embeddingCache.strategy}`);
+  console.log(`[CACHE] Mode: ${embeddingCache.mode}`);
   console.log(`[CACHE] Path: ${cacheFullPath}`);
-  console.log(`[CACHE] Enabled: ${embeddingCache.enabled}`);
   console.log("");
 
   const docsDir = path.join(siteDir, "docs");
@@ -611,88 +610,46 @@ export async function loadContent(
   const allFiles = [...treeToFlatList(docsTree), ...treeToFlatList(pagesTree)];
   console.log(`\n📖 Found ${allFiles.length} total files to process`);
 
-  // --- Embedding Cache Logic ---
+  // --- Simplified Cache Logic ---
   let cacheValid = false;
   let cacheData: ChatPluginContent | undefined = undefined;
-  console.log(`\n[CACHE] Checking cache: ${cacheFullPath}`);
-  if (embeddingCache.enabled) {
+  
+  console.log(`\n[CACHE] Mode: ${embeddingCache.mode}`);
+  console.log(`[CACHE] Path: ${cacheFullPath}`);
+  
+  if (embeddingCache.mode === "use") {
     try {
-      console.log(`[CACHE] Reading cache file...`);
+      console.log(`[CACHE] Reading existing cache file...`);
       const cacheRaw = await fs.readFile(cacheFullPath, "utf-8");
       const cacheJson = JSON.parse(cacheRaw);
-      console.log(
-        `[CACHE] File read successfully. Strategy: ${embeddingCache.strategy}`
-      );
-      console.log(`[CACHE] Contains ${cacheJson.chunks?.length || 0} chunks`);
-
-      if (embeddingCache.strategy === "manual") {
-        // Always use cache if present, never regenerate
-        if (
-          cacheJson.chunks &&
-          Array.isArray(cacheJson.chunks) &&
-          cacheJson.metadata
-        ) {
-          cacheValid = true;
-          cacheData = cacheJson;
-          console.log(
-            `\n[Embedding Cache] MANUAL strategy: Using cache with ${cacheJson.chunks.length} chunks, skipping embedding generation.`
-          );
-        } else {
-          console.warn(
-            "\n[Embedding Cache] MANUAL strategy: Cache file exists but has invalid format."
-          );
-          console.warn(
-            `[CACHE] Validation failed: chunks=${!!cacheJson.chunks}, isArray=${Array.isArray(
-              cacheJson.chunks
-            )}, metadata=${!!cacheJson.metadata}`
-          );
-        }
-      } else if (embeddingCache.strategy === "hash") {
-        // Compute hash of all file contents
-        const hash = crypto.createHash("sha256");
-        for (const file of allFiles) {
-          hash.update(file.content);
-        }
-        const contentHash = hash.digest("hex");
-        if (cacheJson.metadata?.contentHash === contentHash) {
-          cacheValid = true;
-          cacheData = cacheJson;
-          console.log(
-            "\n[Embedding Cache] Valid cache found. Skipping embedding generation."
-          );
-        }
-      } else if (embeddingCache.strategy === "timestamp") {
-        // Compare timestamps (not implemented, fallback to hash)
-        cacheValid = false;
+      
+      if (cacheJson.chunks && Array.isArray(cacheJson.chunks) && cacheJson.metadata) {
+        cacheValid = true;
+        cacheData = cacheJson;
+        console.log(`✅ [CACHE] Using existing cache with ${cacheJson.chunks.length} chunks`);
+      } else {
+        throw new Error("Invalid cache format");
       }
     } catch (e) {
-      console.log(`📋❌ Cache read failed: ${e.message}`);
-      if (embeddingCache.strategy === "manual") {
-        throw createError(
-          ErrorType.FILE_SYSTEM,
-          `Cache file not found at ${cacheFullPath}`,
-          "Manual embedding cache strategy requires a valid cache file. Please generate embeddings manually.",
-          {
-            emoji: "📋❌",
-            retryable: false,
-          }
-        );
-      }
-      // Cache file does not exist or is invalid for other strategies
-      cacheValid = false;
+      throw createError(
+        ErrorType.FILE_SYSTEM,
+        `Cache file not found or invalid at ${cacheFullPath}`,
+        "Mode 'use' requires a valid existing cache file. Set mode to 'auto' to regenerate.",
+        {
+          emoji: "📋❌",
+          retryable: false,
+        }
+      );
     }
   }
 
   if (cacheValid && cacheData) {
-    console.log(
-      `[CACHE] Valid, returning cached data with ${cacheData.chunks.length} chunks`
-    );
+    console.log(`🎯 [CACHE] Using cached embeddings, skipping generation`);
     return cacheData;
   }
-  console.log(
-    `[CACHE] Not valid (cacheValid=${cacheValid}, hasData=${!!cacheData}), proceeding with embedding generation`
-  );
-  // --- End Embedding Cache Logic ---
+
+  console.log(`🔄 [CACHE] Regenerating embeddings (mode: ${embeddingCache.mode})`);
+  // --- End Cache Logic ---
 
   // Process each file into chunks with metadata
   console.log("\n📖 Splitting content into chunks...\n");
@@ -931,23 +888,13 @@ export async function loadContent(
     !!chunksWithEmbeddings[0]?.metadata?.fileURL
   );
 
-  // Compute content hash for cache
-  let contentHash = "";
-  if (
-    embeddingCache.strategy === "hash" ||
-    embeddingCache.strategy === "manual"
-  ) {
-    const hash = crypto.createHash("sha256");
-    for (const file of allFiles) {
-      hash.update(file.content);
-    }
-    contentHash = hash.digest("hex");
-    if (embeddingCache.strategy === "manual") {
-      console.log(
-        `\n[Embedding Cache] MANUAL strategy: Generated contentHash ${contentHash} for future reference.`
-      );
-    }
+  // Compute content hash for cache metadata
+  const hash = crypto.createHash("sha256");
+  for (const file of allFiles) {
+    hash.update(file.content);
   }
+  const contentHash = hash.digest("hex");
+  console.log(`\n[CACHE] Generated contentHash ${contentHash} for metadata.`);
 
   const result: ChatPluginContent = {
     chunks: chunksWithEmbeddings,
@@ -1003,31 +950,38 @@ export async function loadContent(
     JSON.stringify(result.chunks[0]?.metadata, null, 2)
   );
 
-  // Write cache
-  if (embeddingCache.enabled) {
+  // Write cache (except in 'skip' mode)
+  console.log(`\n📝 PREPARING TO WRITE CACHE TO: ${cacheFullPath}`);
+  console.log(`📝 Cache mode: ${embeddingCache.mode}`);
+  
+  if (embeddingCache.mode !== "skip") {
     try {
+      console.log(`📝 Creating directory: ${path.dirname(cacheFullPath)}`);
       await fs.mkdir(path.dirname(cacheFullPath), { recursive: true });
+      
+      console.log(`📝 Writing cache file to: ${cacheFullPath}`);
       await fs.writeFile(
         cacheFullPath,
         JSON.stringify(result, null, 2),
         "utf-8"
       );
-      console.log(`\n🔥 CACHE WRITTEN TO: ${cacheFullPath}`);
-      console.log(
-        `🔥 Cache file size: ${JSON.stringify(result).length} characters`
-      );
-      console.log(
-        `🔥 First chunk in cache has fileURL:`,
-        !!result.chunks[0]?.metadata?.fileURL
-      );
+      
+      console.log(`\n✅ CACHE SUCCESSFULLY WRITTEN TO: ${cacheFullPath}`);
+      console.log(`✅ Cache file size: ${JSON.stringify(result).length} characters`);
+      console.log(`✅ First chunk in cache has fileURL: ${!!result.chunks[0]?.metadata?.fileURL}`);
+      
+      // Verify file exists
+      const stats = await fs.stat(cacheFullPath);
+      console.log(`✅ Cache file confirmed - size: ${stats.size} bytes`);
+      
     } catch (e) {
       const cacheError = handleFileSystemError(e, cacheFullPath);
-      console.warn(
-        `${cacheError.emoji} Failed to write embedding cache:`,
-        cacheError.message
-      );
+      console.error(`❌ FAILED TO WRITE CACHE TO: ${cacheFullPath}`);
+      console.error(`❌ Error: ${cacheError.message}`);
       // Don't throw - cache write failure shouldn't break the build
     }
+  } else {
+    console.log(`⚠️ Cache writing DISABLED (mode: skip)`);
   }
 
   console.log("\n=== 🔥Content processing complete 🔥 ===");

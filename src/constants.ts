@@ -32,8 +32,7 @@ You must follow these rules:
 };
 
 export const DEFAULT_EMBEDDING_CACHE_CONFIG: Required<EmbeddingCacheConfig> = {
-  enabled: true,
-  strategy: "manual",
+  mode: "auto",
   path: "embeddings.json",
 };
 

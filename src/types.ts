@@ -109,9 +109,13 @@ export interface OpenAIConfig {
   apiKey: string
 }
 
+export type EmbeddingCacheMode = 
+  | "auto"     // Always regenerate embeddings and save to cache
+  | "use"      // Use existing cache, error if missing
+  | "skip"     // Always regenerate embeddings, don't save cache
+
 export interface EmbeddingCacheConfig {
-  enabled?: boolean // Enable or disable embedding cache (default: true)
-  strategy?: "hash" | "timestamp" | "manual" // Cache validation strategy
+  mode?: EmbeddingCacheMode // Cache behavior (default: 'auto')
   path?: string // Cache file path (default: 'embeddings.json')
 }
 

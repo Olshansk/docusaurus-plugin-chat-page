@@ -154,11 +154,15 @@ Visit `/chat` on your site - that's it! 🎉
 
 ### Caching Options
 
-| Option                    | Type      | Default             | Description                            |
-| ------------------------- | --------- | ------------------- | -------------------------------------- |
-| `embeddingCache.enabled`  | `boolean` | `true`              | Enable embedding cache                 |
-| `embeddingCache.strategy` | `string`  | `"hash"`            | `"hash"`, `"timestamp"`, or `"manual"` |
-| `embeddingCache.path`     | `string`  | `"embeddings.json"` | Cache file location                    |
+| Option                 | Type     | Default             | Description                          |
+| ---------------------- | -------- | ------------------- | ------------------------------------ |
+| `embeddingCache.mode`  | `string` | `"auto"`            | `"auto"`, `"use"`, or `"skip"`       |
+| `embeddingCache.path`  | `string` | `"embeddings.json"` | Cache file location in target site   |
+
+**Cache Modes:**
+- `"auto"` - Always regenerate embeddings and save to cache (default)
+- `"use"` - Use existing cache, error if missing (production)
+- `"skip"` - Always regenerate embeddings, don't save cache (testing)
 
 ---
 
@@ -201,8 +205,7 @@ module.exports = {
 
         // Performance optimization
         embeddingCache: {
-          enabled: true,
-          strategy: "hash", // Use "manual" for CI/CD
+          mode: "auto", // Use "use" for CI/CD with pre-generated cache
         },
       },
     ],
@@ -259,24 +262,30 @@ module.exports = {
 
 ```js
 embeddingCache: {
-  strategy: "hash", // Regenerates when content changes
+  mode: "auto", // Always regenerate and save (default)
 }
 ```
 
-### For CI/CD
+### For CI/CD with Pre-generated Cache
 
 ```js
 embeddingCache: {
-  strategy: "manual", // Never regenerates automatically
+  mode: "use", // Use existing cache, error if missing
 }
 ```
 
-Commit `embeddings.json` to git for faster CI builds:
+**Cache Storage Location:**
+Embeddings are stored in: `{your-site-root}/embeddings.json`
 
+**To track embeddings in git:**
 ```gitignore
-# .gitignore
-.docusaurus/*
-!.docusaurus/embeddings.json
+# .gitignore - ensure embeddings.json is NOT ignored
+# embeddings.json  <-- Remove this line if present
+```
+
+**Clean cache command:**
+```bash
+make -f makefiles/docs.mk clean_embeddings
 ```
 
 ---
@@ -296,8 +305,8 @@ Configure `baseURL` to generate clickable documentation links:
 
 - ✅ Removes `.md`/`.mdx` extensions
 - ✅ Strips numeric prefixes (`1_operate` → `operate`)
-- ✅ Converts underscores to hyphens everywhere (`supplier_config` → `supplier-config`)
-- ✅ Environment-aware (localhost vs production)
+- ✅ Converts underscores to hyphens (`supplier_config` → `supplier-config`)
+- ✅ Environment-aware (localhost:4000 vs production URLs)
 
 ### Custom System Prompts
 
@@ -395,7 +404,8 @@ embedding: {
 | **"API key required"** | Set `OPENAI_API_KEY` in `.env` file                |
 | **Build fails**        | Check API key permissions and rate limits          |
 | **No responses**       | Verify `baseURL` configuration                     |
-| **Slow builds**        | Enable caching with `embeddingCache.enabled: true` |
+| **Slow builds**        | Use `embeddingCache: { mode: "auto" }` (default)   |
+| **Cache not found**    | Set `mode: "auto"` instead of `"use"`              |
 
 ---
 
