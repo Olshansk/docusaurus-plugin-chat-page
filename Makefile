@@ -19,9 +19,12 @@ help: ## Prints all the targets in all the Makefiles
 build-github: ## Build the project and prepare it for GitHub install
 	@echo "Installing dependencies with yarn..."
 	yarn install
+
 	@echo "Building the project..."
 	yarn build
+
 	@echo "Adding built files in lib to git..."
 	git add -f lib
+
 	@echo "Committing build for GitHub install..."
 	git commit -m "Build plugin for GitHub install"
