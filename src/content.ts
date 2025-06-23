@@ -82,8 +82,8 @@ function filePathToURL(
     // Remove numeric prefixes from both directories AND filenames (e.g., "1_operate" -> "operate", "4_relayminer_config" -> "relayminer_config")
     let processed = segment.replace(/^\d+_/, "");
 
-    // Convert underscores to hyphens for both directories AND filenames
-    processed = processed.replace(/_/g, "-");
+    // Keep underscores as-is to match actual file URLs
+    // processed = processed.replace(/_/g, "-");
 
     return processed;
   });
