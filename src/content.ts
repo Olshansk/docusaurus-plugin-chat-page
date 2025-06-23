@@ -58,7 +58,9 @@ function filePathToURL(
     baseURL.includes("localhost") ||
     baseURL.includes("127.0.0.1") ||
     baseURL.includes(":3000") ||
-    baseURL.includes(":4000");
+    baseURL.includes(":4000") ||
+    baseURL.startsWith("http://localhost") ||
+    baseURL.startsWith("https://localhost");
 
   console.log(
     `🛠️ Environment detection: ${
@@ -95,11 +97,16 @@ function filePathToURL(
   let finalURL: string;
 
   if (isDevelopment) {
-    // For localhost development, use localhost:4000 (or current port)
-    const devBaseURL =
-      baseURL.includes("localhost") || baseURL.includes("127.0.0.1")
-        ? baseURL
-        : "http://localhost:4000";
+    // For localhost development, always use http://localhost:4000 unless baseURL is already localhost
+    let devBaseURL: string;
+    
+    if (baseURL.includes("localhost") || baseURL.includes("127.0.0.1")) {
+      // If baseURL is already localhost, use it but ensure it uses port 4000
+      devBaseURL = baseURL.replace(/:3000/, ":4000");
+    } else {
+      // Default to localhost:4000 for development
+      devBaseURL = "http://localhost:4000";
+    }
 
     const cleanBaseURL = devBaseURL.replace(/\/$/, "");
     finalURL = `${cleanBaseURL}/${urlPath}`;
@@ -573,7 +580,9 @@ export async function loadContent(
   };
   const baseURL = options?.baseURL;
   const cachePath = embeddingCache.path || "embeddings.json";
-  const cacheFullPath = path.join(siteDir, ".docusaurus", cachePath);
+  
+  // Use target site root directory for single source of truth
+  const cacheFullPath = path.join(siteDir, cachePath);
 
   if (!options?.openai?.apiKey) {
     throw handleValidationError(

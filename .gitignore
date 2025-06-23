@@ -2,11 +2,15 @@
 /node_modules
 
 # Production
-/lib
+# TODO: Commented out since we're using the git repo as the source of truth for now.
+# /lib
 
 # Generated files
 .docusaurus
 .cache-loader
+
+# Track embeddings in main repo as single source of truth
+# (embeddings.json in root will be tracked)
 
 # Misc
 .DS_Store

@@ -28,3 +28,5 @@ build-github: ## Build the project and prepare it for GitHub install
 
 	@echo "Committing build for GitHub install..."
 	git commit -m "Build plugin for GitHub install"
+
+include ./makefiles/docs.mk
