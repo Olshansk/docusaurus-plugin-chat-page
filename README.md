@@ -22,6 +22,7 @@ Transform your static documentation into an interactive experience. Users can as
   - [2. Configure](#2-configure)
   - [3. Set API Key](#3-set-api-key)
   - [4. Build \& Run](#4-build--run)
+- [📁 Example Site](#-example-site)
 - [⚡ Why Use This Plugin?](#-why-use-this-plugin)
 - [📋 Configuration Options](#-configuration-options)
   - [Basic Configuration](#basic-configuration)
@@ -54,6 +55,7 @@ Transform your static documentation into an interactive experience. Users can as
     - [6. Other Platforms](#6-other-platforms)
 - [🤝 Contributing](#-contributing)
   - [Development Setup](#development-setup)
+- [🚧 Roadmap \& Future Plans](#-roadmap--future-plans)
 - [📄 License](#-license)
 - [💬 Support](#-support)
 
@@ -104,6 +106,20 @@ npm run build && npm start
 ```
 
 Visit `/chat` on your site - that's it! 🎉
+
+## 📁 Example Site
+
+Want to see the plugin in action? Check out the [`example-site/`](./example-site/) directory which contains a complete Docusaurus site with the chat plugin pre-configured.
+
+```bash
+cd example-site
+yarn install
+cp .env.example .env
+# Edit .env with your OpenAI API key
+yarn start
+```
+
+Then visit http://localhost:3000/chat to see the chat interface!
 
 ---
 
@@ -489,6 +505,67 @@ cd docusaurus-plugin-chat-page
 yarn install
 yarn build
 ```
+
+#### Local Development with Test Site
+
+For local development with a test Docusaurus site:
+
+```bash
+# In plugin directory
+yarn build
+yarn link
+
+# In test Docusaurus project
+yarn link docusaurus-plugin-chat-page
+```
+
+#### GitHub Installation Setup
+
+Need to push `lib` folder to GitHub which is usually not tracked by git since it's built by npm package managers.
+
+```bash
+yarn install
+yarn build
+git add -f lib
+git commit -m "Build plugin for GitHub install"
+```
+
+Or use the provided make command:
+
+```bash
+make build-github
+```
+
+---
+
+## 🚧 Roadmap & Future Plans
+
+### Short-term Goals
+
+- [ ] Code cleanup and refactoring
+- [ ] Improved AI prompts
+- [ ] Enhanced embedding generation and splitting
+- [ ] Better documentation with examples
+
+### Long-term Vision
+
+#### Multi-Provider Support
+- [ ] **OpenRouter API Keys** - Alternative AI model access
+- [ ] **Claude Integration** - Anthropic's Claude models
+- [ ] **Local Models** - Self-hosted AI models
+- [ ] **WebAssembly Models** - Client-side AI processing
+- [ ] **Local Embeddings** - Offline embedding generation
+
+#### Advanced Embedding Features
+- [ ] **Custom Embedding Models** - Configurable model selection
+- [ ] **Advanced Chunking Strategies** - Better content splitting
+- [ ] **Embedding Similarity Tuning** - Improved search relevance
+
+#### Enhanced Chat Experience
+- [ ] **Custom System Prompts** - Domain-specific responses
+- [ ] **Code Snippet Integration** - Automatic code examples
+- [ ] **Smart Link Generation** - Contextual documentation links
+- [ ] **Claude-style References** - Source citations in responses
 
 ---
 

@@ -9,20 +9,26 @@ This is a Docusaurus plugin that adds an AI-powered chat interface to documentat
 ## Common Development Commands
 
 ```bash
-# Build the plugin
+# Build the plugin (includes CSS copying)
 npm run build
 
-# Build with CSS copying
-npm run build && npm run copy-css
-
-# Watch mode for development
+# Watch mode for development (TypeScript only)
 npm run watch
 
 # Clean build artifacts
 npm run clean
 
-# Copy CSS files after build
+# Copy CSS files after build (automatically done by build command)
 npm run copy-css
+
+# Build and prepare for GitHub install (includes git commit)
+make build-github
+
+# Clean embedding cache files
+make clean_embeddings
+
+# Clean Docusaurus cache directories
+make clean_docusaurus_cache
 ```
 
 ## Local Development Setup
@@ -42,24 +48,34 @@ yarn link docusaurus-plugin-chat-page
 
 ### Plugin Structure
 
-- **src/index.ts**: Main plugin entry point implementing Docusaurus plugin lifecycle
-- **src/content.ts**: Content processing, markdown parsing, and embedding generation
-- **src/services/ai.ts**: OpenAI API integration for embeddings and chat completions
-- **src/types.ts**: TypeScript type definitions for the plugin
-- **src/theme/ChatPage/**: React component for the chat interface
+- **src/index.ts**: Main plugin entry point implementing Docusaurus plugin lifecycle (loadContent/contentLoaded hooks)
+- **src/content.ts**: Content processing, markdown parsing, embedding generation, and cache management
+- **src/services/ai.ts**: OpenAI API integration for embeddings and chat completions with retry logic
+- **src/types.ts**: TypeScript type definitions and plugin interfaces
+- **src/utils/**: Utility modules for vector operations and error handling
+- **src/theme/ChatPage/**: Complete React chat interface with components and hooks
+- **src/constants.ts**: Configuration defaults and file patterns
+
+### Component Architecture
+
+- **Theme Components**: ChatPage, ChatHistory, ChatInput, ChatMessage, ChatSidebar, ErrorBoundary
+- **Hooks**: useAIChat (streaming responses), useChatState (session/conversation management)
+- **Utils**: Vector similarity search, error handling with retry mechanisms
 
 ### Build Process
 
-1. **Content Loading**: Scans documentation files, processes markdown with frontmatter
-2. **Chunk Generation**: Splits content into manageable chunks for embedding
-3. **Embedding Generation**: Uses OpenAI's text-embedding-3-small model
+1. **Content Loading**: Scans documentation files using glob patterns, processes markdown with frontmatter
+2. **Chunk Generation**: Splits content by headers or paragraphs with configurable size limits
+3. **Embedding Generation**: Batched OpenAI API calls with caching and retry logic
 4. **Static Generation**: Creates embeddings.json for client-side similarity search
+5. **Theme Registration**: Registers React components in Docusaurus theme system
 
 ### Runtime Architecture
 
-- **Client-side vector search**: Finds relevant documentation chunks using cosine similarity
-- **Streaming chat**: Uses OpenAI's gpt-4o-mini for contextual responses
-- **Theme integration**: Provides React component that integrates with Docusaurus theme system
+- **Client-side vector search**: Cosine similarity search using pre-computed embeddings
+- **Streaming chat**: Real-time OpenAI API responses with proper error boundaries
+- **State management**: Conversation history with session persistence
+- **URL generation**: Automatic documentation link creation from file paths
 
 ## Key Configuration
 
@@ -79,9 +95,28 @@ plugins: [
 ];
 ```
 
+## Development Workflow
+
+### TypeScript Build Process
+
+- TypeScript compilation: `src/` → `lib/`
+- CSS files automatically copied via build script
+- Declaration files generated for proper typing
+- Source maps included for debugging
+
+### Embedding Cache Strategy
+
+- **Development**: Use `"auto"` mode (always regenerate)
+- **CI/CD**: Use `"use"` mode with pre-generated cache
+- Cache files stored as `embeddings.json` in target site root
+- Clean cache with `make clean_embeddings`
+
 ## Important Notes
 
 - OpenAI API key is only used at build time for embedding generation
 - The plugin uses Docusaurus content loading lifecycle (loadContent/contentLoaded)
-- CSS files must be manually copied after TypeScript compilation
+- CSS files are automatically copied during build process
 - Plugin follows Docusaurus plugin architecture with proper theme path registration
+- No testing framework currently configured
+- Error handling includes retry logic for OpenAI API calls
+- Vector similarity search runs entirely client-side for performance
