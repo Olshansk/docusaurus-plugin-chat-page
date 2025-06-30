@@ -36,7 +36,7 @@ Transform your static documentation into an interactive experience. Users can as
   - [Runtime](#runtime)
 - [💡 Performance Tips](#-performance-tips)
   - [For Development](#for-development)
-  - [For CI/CD](#for-cicd)
+  - [For CI/CD with Pre-generated Cache](#for-cicd-with-pre-generated-cache)
 - [🔧 Advanced Features](#-advanced-features)
   - [URL Link Generation](#url-link-generation)
   - [Custom System Prompts](#custom-system-prompts)
@@ -55,7 +55,14 @@ Transform your static documentation into an interactive experience. Users can as
     - [6. Other Platforms](#6-other-platforms)
 - [🤝 Contributing](#-contributing)
   - [Development Setup](#development-setup)
+    - [Local Development with Test Site](#local-development-with-test-site)
+    - [GitHub Installation Setup](#github-installation-setup)
 - [🚧 Roadmap \& Future Plans](#-roadmap--future-plans)
+  - [Short-term Goals](#short-term-goals)
+  - [Long-term Vision](#long-term-vision)
+    - [Multi-Provider Support](#multi-provider-support)
+    - [Advanced Embedding Features](#advanced-embedding-features)
+    - [Enhanced Chat Experience](#enhanced-chat-experience)
 - [📄 License](#-license)
 - [💬 Support](#-support)
 
@@ -170,12 +177,13 @@ Then visit http://localhost:3000/chat to see the chat interface!
 
 ### Caching Options
 
-| Option                 | Type     | Default             | Description                          |
-| ---------------------- | -------- | ------------------- | ------------------------------------ |
-| `embeddingCache.mode`  | `string` | `"auto"`            | `"auto"`, `"use"`, or `"skip"`       |
-| `embeddingCache.path`  | `string` | `"embeddings.json"` | Cache file location in target site   |
+| Option                | Type     | Default             | Description                        |
+| --------------------- | -------- | ------------------- | ---------------------------------- |
+| `embeddingCache.mode` | `string` | `"auto"`            | `"auto"`, `"use"`, or `"skip"`     |
+| `embeddingCache.path` | `string` | `"embeddings.json"` | Cache file location in target site |
 
 **Cache Modes:**
+
 - `"auto"` - Always regenerate embeddings and save to cache (default)
 - `"use"` - Use existing cache, error if missing (production)
 - `"skip"` - Always regenerate embeddings, don't save cache (testing)
@@ -294,12 +302,14 @@ embeddingCache: {
 Embeddings are stored in: `{your-site-root}/embeddings.json`
 
 **To track embeddings in git:**
+
 ```gitignore
 # .gitignore - ensure embeddings.json is NOT ignored
 # embeddings.json  <-- Remove this line if present
 ```
 
 **Clean cache command:**
+
 ```bash
 make -f makefiles/docs.mk clean_embeddings
 ```
@@ -415,13 +425,13 @@ embedding: {
 
 ## 🚨 Troubleshooting
 
-| Issue                  | Solution                                           |
-| ---------------------- | -------------------------------------------------- |
-| **"API key required"** | Set `OPENAI_API_KEY` in `.env` file                |
-| **Build fails**        | Check API key permissions and rate limits          |
-| **No responses**       | Verify `baseURL` configuration                     |
-| **Slow builds**        | Use `embeddingCache: { mode: "auto" }` (default)   |
-| **Cache not found**    | Set `mode: "auto"` instead of `"use"`              |
+| Issue                  | Solution                                         |
+| ---------------------- | ------------------------------------------------ |
+| **"API key required"** | Set `OPENAI_API_KEY` in `.env` file              |
+| **Build fails**        | Check API key permissions and rate limits        |
+| **No responses**       | Verify `baseURL` configuration                   |
+| **Slow builds**        | Use `embeddingCache: { mode: "auto" }` (default) |
+| **Cache not found**    | Set `mode: "auto"` instead of `"use"`            |
 
 ---
 
@@ -550,6 +560,7 @@ make build-github
 ### Long-term Vision
 
 #### Multi-Provider Support
+
 - [ ] **OpenRouter API Keys** - Alternative AI model access
 - [ ] **Claude Integration** - Anthropic's Claude models
 - [ ] **Local Models** - Self-hosted AI models
@@ -557,11 +568,13 @@ make build-github
 - [ ] **Local Embeddings** - Offline embedding generation
 
 #### Advanced Embedding Features
+
 - [ ] **Custom Embedding Models** - Configurable model selection
 - [ ] **Advanced Chunking Strategies** - Better content splitting
 - [ ] **Embedding Similarity Tuning** - Improved search relevance
 
 #### Enhanced Chat Experience
+
 - [ ] **Custom System Prompts** - Domain-specific responses
 - [ ] **Code Snippet Integration** - Automatic code examples
 - [ ] **Smart Link Generation** - Contextual documentation links
